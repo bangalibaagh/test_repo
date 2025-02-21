@@ -1,0 +1,30 @@
+# Use the official Python image
+FROM python:3.12
+
+# Set the working directory in the container
+WORKDIR /workspace
+
+# Install essential dependencies
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    python3-tk \
+    procps \
+    net-tools \
+    && apt-get clean
+
+# Install Python development tools
+RUN pip install --upgrade pip \
+    && pip install poetry pylint black mypy
+
+# Create a non-root user for development
+RUN useradd -m -s /bin/bash devuser && \
+    echo "devuser:devpassword" | chpasswd
+
+# Set the user to devuser
+USER devuser
+
+# Expose necessary ports (for your app)
+EXPOSE 8000
+
+# Set the default command to run a Python HTTP server for development
+CMD ["python", "-m", "http.server", "8000"]

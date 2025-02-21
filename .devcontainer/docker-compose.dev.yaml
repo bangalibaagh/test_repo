@@ -1,0 +1,22 @@
+services:
+  python-app:
+    build:
+      context: ..
+      dockerfile: .devcontainer/dockerfile.dev
+    ports:
+      - "8000:8000"  # For your Python app if needed
+      - "10001:10001"  # VNC server
+      - "10000:10000"  # noVNC
+      - "5901:5901"
+      - "6901-6901"
+    volumes:
+      - ../src:/workspace/src  # Mount project files
+    stdin_open: true  # Keep the container open to allow terminal input
+    tty: true  # Allocate a pseudo-TTY for easier debugging    
+    environment:
+      PYTHONUNBUFFERED: 1
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:10000/vnc.html"]  # Check if noVNC is up
+      interval: 30s
+      timeout: 10s
+      retries: 3
