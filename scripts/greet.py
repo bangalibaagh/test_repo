@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 """A simple greeting module."""
 
-from typing import str
-
 
 def greet(name: str) -> str:
     """Return a greeting for the given name.
