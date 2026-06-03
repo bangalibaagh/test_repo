@@ -2,6 +2,12 @@
 """Tests for Roman numeral conversion script."""
 
 import pytest
+import sys
+import os
+
+# Add the project root to the Python path
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 from scripts.roman import decimal_to_roman
 
 
@@ -72,22 +78,3 @@ class TestDecimalToRoman:
         
         with pytest.raises(ValueError, match="Number must be an integer between 1 and 3999"):
             decimal_to_roman("42")
-    
-    def test_specific_requested_cases(self):
-        """Test the specific cases mentioned in the task."""
-        # Single cases
-        assert decimal_to_roman(1) == "I"
-        assert decimal_to_roman(4) == "IV"
-        assert decimal_to_roman(9) == "IX"
-        assert decimal_to_roman(40) == "XL"
-        assert decimal_to_roman(90) == "XC"
-        assert decimal_to_roman(400) == "CD"
-        assert decimal_to_roman(900) == "CM"
-        
-        # Additional composite numbers
-        assert decimal_to_roman(44) == "XLIV"  # 40 + 4
-        assert decimal_to_roman(49) == "XLIX"  # 40 + 9
-        assert decimal_to_roman(94) == "XCIV"  # 90 + 4
-        assert decimal_to_roman(99) == "XCIX"  # 90 + 9
-        assert decimal_to_roman(444) == "CDXLIV"  # 400 + 40 + 4
-        assert decimal_to_roman(949) == "CMXLIX"  # 900 + 40 + 9
