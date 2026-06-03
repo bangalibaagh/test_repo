@@ -1,77 +1,75 @@
-#!/usr/bin/env python3
-"""Script to convert decimal numbers to Roman numerals."""
-
-import sys
-from typing import Dict, List, Tuple
-
-
-def decimal_to_roman(num: int) -> str:
-    """Convert a decimal number to Roman numeral.
+def decimal_to_roman(num):
+    """
+    Convert a decimal number to Roman numeral.
     
     Args:
         num: Integer between 1 and 3999 (inclusive)
         
     Returns:
-        Roman numeral representation as string
+        str: Roman numeral representation
         
     Raises:
-        ValueError: If number is not in valid range (1-3999)
+        ValueError: If num is not an integer or is outside valid range
+        TypeError: If num is not a number type
     """
-    if not isinstance(num, int) or num < 1 or num > 3999:
-        raise ValueError("Number must be an integer between 1 and 3999")
+    # Type validation
+    if not isinstance(num, int):
+        raise TypeError(f"Input must be an integer, got {type(num).__name__}")
     
-    # Roman numeral mappings in descending order
-    roman_numerals: List[Tuple[int, str]] = [
-        (1000, 'M'),
-        (900, 'CM'),
-        (500, 'D'),
-        (400, 'CD'),
-        (100, 'C'),
-        (90, 'XC'),
-        (50, 'L'),
-        (40, 'XL'),
-        (10, 'X'),
-        (9, 'IX'),
-        (5, 'V'),
-        (4, 'IV'),
-        (1, 'I')
-    ]
+    # Range validation
+    if num < 1 or num > 3999:
+        raise ValueError(f"Number must be between 1 and 3999, got {num}")
     
-    result = ""
+    # Roman numeral mapping in descending order
+    values = [1000, 900, 500, 400, 100, 90, 50, 40, 10, 9, 5, 4, 1]
+    symbols = ['M', 'CM', 'D', 'CD', 'C', 'XC', 'L', 'XL', 'X', 'IX', 'V', 'IV', 'I']
     
-    for value, numeral in roman_numerals:
-        count = num // value
+    result = ''
+    
+    for i in range(len(values)):
+        count = num // values[i]
         if count:
-            result += numeral * count
-            num -= value * count
+            result += symbols[i] * count
+            num -= values[i] * count
     
     return result
 
 
-def main() -> None:
-    """Main function to handle user input and convert to Roman numeral."""
+def main():
+    """
+    Main function to handle command line arguments or interactive input.
+    """
+    import sys
+    
     if len(sys.argv) > 1:
-        # Command line argument provided
+        # Command line mode
         try:
-            number = int(sys.argv[1])
-            roman = decimal_to_roman(number)
-            print(f"{number} in Roman numerals is: {roman}")
-        except ValueError as e:
-            print(f"Error: {e}", file=sys.stderr)
-            sys.exit(1)
+            num = int(sys.argv[1])
+        except ValueError:
+            print(f"Error: '{sys.argv[1]}' is not a valid integer")
+            return
+        
+        try:
+            roman = decimal_to_roman(num)
+            print(f"{num} in Roman numerals is: {roman}")
+        except (ValueError, TypeError) as e:
+            print(f"Error: {e}")
     else:
         # Interactive mode
         try:
             user_input = input("Enter a decimal number (1-3999): ")
-            number = int(user_input)
-            roman = decimal_to_roman(number)
-            print(f"{number} in Roman numerals is: {roman}")
-        except ValueError as e:
-            print(f"Error: {e}", file=sys.stderr)
-            sys.exit(1)
+            try:
+                num = int(user_input)
+            except ValueError:
+                print(f"Error: '{user_input}' is not a valid integer")
+                return
+            
+            roman = decimal_to_roman(num)
+            print(f"{num} in Roman numerals is: {roman}")
+        except (ValueError, TypeError) as e:
+            print(f"Error: {e}")
         except KeyboardInterrupt:
             print("\nGoodbye!")
-            sys.exit(0)
 
 
 if __name__ == "__main__":

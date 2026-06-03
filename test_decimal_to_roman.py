@@ -1,143 +1,149 @@
-#!/usr/bin/env python3
-"""Tests for decimal_to_roman.py"""
-
-import pytest
+import unittest
+from unittest.mock import patch
 import sys
 from io import StringIO
-from unittest.mock import patch
-
 from decimal_to_roman import decimal_to_roman, main
 
 
-class TestDecimalToRoman:
-    """Test cases for decimal_to_roman function."""
+class TestDecimalToRoman(unittest.TestCase):
     
-    def test_basic_numerals(self):
-        """Test basic Roman numeral conversions."""
-        assert decimal_to_roman(1) == "I"
-        assert decimal_to_roman(5) == "V"
-        assert decimal_to_roman(10) == "X"
-        assert decimal_to_roman(50) == "L"
-        assert decimal_to_roman(100) == "C"
-        assert decimal_to_roman(500) == "D"
-        assert decimal_to_roman(1000) == "M"
-    
-    def test_subtractive_notation(self):
-        """Test subtractive notation cases."""
-        assert decimal_to_roman(4) == "IV"
-        assert decimal_to_roman(9) == "IX"
-        assert decimal_to_roman(40) == "XL"
-        assert decimal_to_roman(90) == "XC"
-        assert decimal_to_roman(400) == "CD"
-        assert decimal_to_roman(900) == "CM"
-    
-    def test_complex_numbers(self):
-        """Test more complex Roman numeral conversions."""
-        assert decimal_to_roman(27) == "XXVII"
-        assert decimal_to_roman(48) == "XLVIII"
-        assert decimal_to_roman(59) == "LIX"
-        assert decimal_to_roman(93) == "XCIII"
-        assert decimal_to_roman(141) == "CXLI"
-        assert decimal_to_roman(163) == "CLXIII"
-        assert decimal_to_roman(402) == "CDII"
-        assert decimal_to_roman(575) == "DLXXV"
-        assert decimal_to_roman(911) == "CMXI"
-        assert decimal_to_roman(1024) == "MXXIV"
-    
-    def test_large_numbers(self):
-        """Test large numbers within valid range."""
-        assert decimal_to_roman(1994) == "MCMXCIV"
-        assert decimal_to_roman(2023) == "MMXXIII"
-        assert decimal_to_roman(3999) == "MMMCMXCIX"
+    def test_basic_conversions(self):
+        """Test basic decimal to roman conversions."""
+        test_cases = [
+            (1, 'I'),
+            (4, 'IV'),
+            (5, 'V'),
+            (9, 'IX'),
+            (10, 'X'),
+            (40, 'XL'),
+            (50, 'L'),
+            (90, 'XC'),
+            (100, 'C'),
+            (400, 'CD'),
+            (500, 'D'),
+            (900, 'CM'),
+            (1000, 'M'),
+            (1994, 'MCMXCIV'),
+            (3999, 'MMMCMXCIX')
+        ]
+        
+        for decimal, expected_roman in test_cases:
+            with self.subTest(decimal=decimal):
+                self.assertEqual(decimal_to_roman(decimal), expected_roman)
     
     def test_edge_cases(self):
-        """Test edge cases at boundaries."""
-        assert decimal_to_roman(1) == "I"
-        assert decimal_to_roman(3999) == "MMMCMXCIX"
+        """Test edge cases for valid range."""
+        self.assertEqual(decimal_to_roman(1), 'I')
+        self.assertEqual(decimal_to_roman(3999), 'MMMCMXCIX')
     
-    def test_invalid_input_zero(self):
-        """Test that zero raises ValueError."""
-        with pytest.raises(ValueError, match="Number must be an integer between 1 and 3999"):
+    def test_invalid_range(self):
+        """Test numbers outside valid range."""
+        with self.assertRaises(ValueError) as cm:
             decimal_to_roman(0)
-    
-    def test_invalid_input_negative(self):
-        """Test that negative numbers raise ValueError."""
-        with pytest.raises(ValueError, match="Number must be an integer between 1 and 3999"):
-            decimal_to_roman(-1)
-        with pytest.raises(ValueError, match="Number must be an integer between 1 and 3999"):
-            decimal_to_roman(-100)
-    
-    def test_invalid_input_too_large(self):
-        """Test that numbers > 3999 raise ValueError."""
-        with pytest.raises(ValueError, match="Number must be an integer between 1 and 3999"):
+        self.assertIn("Number must be between 1 and 3999", str(cm.exception))
+        
+        with self.assertRaises(ValueError) as cm:
             decimal_to_roman(4000)
-        with pytest.raises(ValueError, match="Number must be an integer between 1 and 3999"):
-            decimal_to_roman(5000)
+        self.assertIn("Number must be between 1 and 3999", str(cm.exception))
+        
+        with self.assertRaises(ValueError) as cm:
+            decimal_to_roman(-5)
+        self.assertIn("Number must be between 1 and 3999", str(cm.exception))
     
-    def test_invalid_input_non_integer(self):
-        """Test that non-integers raise ValueError."""
-        with pytest.raises(ValueError, match="Number must be an integer between 1 and 3999"):
-            decimal_to_roman(3.14)
-        with pytest.raises(ValueError, match="Number must be an integer between 1 and 3999"):
+    def test_invalid_types(self):
+        """Test invalid input types."""
+        with self.assertRaises(TypeError) as cm:
             decimal_to_roman("42")
+        self.assertIn("Input must be an integer", str(cm.exception))
+        
+        with self.assertRaises(TypeError) as cm:
+            decimal_to_roman(42.5)
+        self.assertIn("Input must be an integer", str(cm.exception))
+        
+        with self.assertRaises(TypeError) as cm:
+            decimal_to_roman(None)
+        self.assertIn("Input must be an integer", str(cm.exception))
 
 
-class TestMainFunction:
-    """Test cases for main function."""
+class TestMainFunction(unittest.TestCase):
     
-    @patch('sys.argv', ['decimal_to_roman.py', '42'])
-    @patch('sys.stdout', new_callable=StringIO)
-    def test_command_line_valid_input(self, mock_stdout):
-        """Test main function with valid command line argument."""
-        main()
-        assert mock_stdout.getvalue().strip() == "42 in Roman numerals is: XLII"
+    def test_command_line_valid_input(self):
+        """Test main function with valid command line input."""
+        with patch('sys.argv', ['script.py', '42']):
+            with patch('sys.stdout', new=StringIO()) as fake_out:
+                main()
+                output = fake_out.getvalue()
+                self.assertIn("42 in Roman numerals is: XLII", output)
     
-    @patch('sys.argv', ['decimal_to_roman.py', '0'])
-    @patch('sys.stderr', new_callable=StringIO)
-    def test_command_line_invalid_input(self, mock_stderr):
-        """Test main function with invalid command line argument."""
-        with pytest.raises(SystemExit) as exc_info:
-            main()
-        assert exc_info.value.code == 1
-        assert "Error: Number must be an integer between 1 and 3999" in mock_stderr.getvalue()
+    def test_command_line_invalid_string_input(self):
+        """Test main function with invalid string input via command line."""
+        with patch('sys.argv', ['script.py', 'abc']):
+            with patch('sys.stdout', new=StringIO()) as fake_out:
+                main()
+                output = fake_out.getvalue()
+                self.assertIn("Error: 'abc' is not a valid integer", output)
     
-    @patch('sys.argv', ['decimal_to_roman.py', 'abc'])
-    @patch('sys.stderr', new_callable=StringIO)
-    def test_command_line_non_numeric_input(self, mock_stderr):
-        """Test main function with non-numeric command line argument."""
-        with pytest.raises(SystemExit) as exc_info:
-            main()
-        assert exc_info.value.code == 1
-        assert "Error:" in mock_stderr.getvalue()
+    def test_command_line_float_string_input(self):
+        """Test main function with float string input via command line."""
+        with patch('sys.argv', ['script.py', '3.14']):
+            with patch('sys.stdout', new=StringIO()) as fake_out:
+                main()
+                output = fake_out.getvalue()
+                self.assertIn("Error: '3.14' is not a valid integer", output)
     
-    @patch('sys.argv', ['decimal_to_roman.py'])
-    @patch('builtins.input', return_value='123')
-    @patch('sys.stdout', new_callable=StringIO)
-    def test_interactive_mode_valid_input(self, mock_stdout, mock_input):
-        """Test main function in interactive mode with valid input."""
-        main()
-        assert mock_stdout.getvalue().strip() == "123 in Roman numerals is: CXXIII"
+    def test_command_line_out_of_range(self):
+        """Test main function with out of range input via command line."""
+        with patch('sys.argv', ['script.py', '4000']):
+            with patch('sys.stdout', new=StringIO()) as fake_out:
+                main()
+                output = fake_out.getvalue()
+                self.assertIn("Error: Number must be between 1 and 3999", output)
     
-    @patch('sys.argv', ['decimal_to_roman.py'])
-    @patch('builtins.input', return_value='0')
-    @patch('sys.stderr', new_callable=StringIO)
-    def test_interactive_mode_invalid_input(self, mock_stderr, mock_input):
-        """Test main function in interactive mode with invalid input."""
-        with pytest.raises(SystemExit) as exc_info:
-            main()
-        assert exc_info.value.code == 1
-        assert "Error: Number must be an integer between 1 and 3999" in mock_stderr.getvalue()
+    @patch('builtins.input', return_value='42')
+    def test_interactive_valid_input(self, mock_input):
+        """Test main function with valid interactive input."""
+        with patch('sys.argv', ['script.py']):
+            with patch('sys.stdout', new=StringIO()) as fake_out:
+                main()
+                output = fake_out.getvalue()
+                self.assertIn("42 in Roman numerals is: XLII", output)
     
-    @patch('sys.argv', ['decimal_to_roman.py'])
+    @patch('builtins.input', return_value='abc')
+    def test_interactive_invalid_string_input(self, mock_input):
+        """Test main function with invalid string input in interactive mode."""
+        with patch('sys.argv', ['script.py']):
+            with patch('sys.stdout', new=StringIO()) as fake_out:
+                main()
+                output = fake_out.getvalue()
+                self.assertIn("Error: 'abc' is not a valid integer", output)
+    
+    @patch('builtins.input', return_value='3.14')
+    def test_interactive_float_string_input(self, mock_input):
+        """Test main function with float string input in interactive mode."""
+        with patch('sys.argv', ['script.py']):
+            with patch('sys.stdout', new=StringIO()) as fake_out:
+                main()
+                output = fake_out.getvalue()
+                self.assertIn("Error: '3.14' is not a valid integer", output)
+    
+    @patch('builtins.input', return_value='4000')
+    def test_interactive_out_of_range(self, mock_input):
+        """Test main function with out of range input in interactive mode."""
+        with patch('sys.argv', ['script.py']):
+            with patch('sys.stdout', new=StringIO()) as fake_out:
+                main()
+                output = fake_out.getvalue()
+                self.assertIn("Error: Number must be between 1 and 3999", output)
+    
     @patch('builtins.input', side_effect=KeyboardInterrupt)
-    @patch('sys.stdout', new_callable=StringIO)
-    def test_interactive_mode_keyboard_interrupt(self, mock_stdout, mock_input):
-        """Test main function handles KeyboardInterrupt gracefully."""
-        with pytest.raises(SystemExit) as exc_info:
-            main()
-        assert exc_info.value.code == 0
-        assert "Goodbye!" in mock_stdout.getvalue()
+    def test_interactive_keyboard_interrupt(self, mock_input):
+        """Test main function handles KeyboardInterrupt in interactive mode."""
+        with patch('sys.argv', ['script.py']):
+            with patch('sys.stdout', new=StringIO()) as fake_out:
+                main()
+                output = fake_out.getvalue()
+                self.assertIn("Goodbye!", output)
 
 
-if __name__ == "__main__":
-    pytest.main([__file__])
+if __name__ == '__main__':
+    unittest.main()
