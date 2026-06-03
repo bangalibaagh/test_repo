@@ -55,7 +55,8 @@ class TestDecimalToRoman(unittest.TestCase):
     @patch('sys.stdout', new_callable=StringIO)
     def test_main_interactive_valid_input(self, mock_stdout, mock_input):
         """Test main function with valid interactive input."""
-        main()
+        with patch('sys.argv', ['script_name']):
+            main()
         output = mock_stdout.getvalue()
         self.assertIn("42 in Roman numerals is: XLII", output)
     
@@ -63,7 +64,8 @@ class TestDecimalToRoman(unittest.TestCase):
     @patch('sys.stdout', new_callable=StringIO)
     def test_main_interactive_invalid_input(self, mock_stdout, mock_input):
         """Test main function with invalid interactive input."""
-        main()
+        with patch('sys.argv', ['script_name']):
+            main()
         output = mock_stdout.getvalue()
         self.assertIn("Error:", output)
     
@@ -84,26 +86,29 @@ class TestDecimalToRoman(unittest.TestCase):
         self.assertEqual(cm.exception.code, 1)
         output = mock_stdout.getvalue()
         self.assertIn("Error:", output)
+        self.assertIn("between 1 and 3999", output)
     
     @patch('sys.argv', ['script_name', 'abc'])
     @patch('sys.stdout', new_callable=StringIO)
-    def test_main_command_line_non_numeric_string(self, mock_stdout):
-        """Test main function with non-numeric string command line argument."""
+    def test_main_command_line_invalid_string(self, mock_stdout):
+        """Test main function with invalid string command line argument."""
         with self.assertRaises(SystemExit) as cm:
             main()
         self.assertEqual(cm.exception.code, 1)
         output = mock_stdout.getvalue()
         self.assertIn("Error:", output)
+        self.assertIn("Invalid input 'abc'", output)
     
     @patch('sys.argv', ['script_name', '3.14'])
     @patch('sys.stdout', new_callable=StringIO)
-    def test_main_command_line_float_string(self, mock_stdout):
-        """Test main function with float string command line argument."""
+    def test_main_command_line_invalid_float(self, mock_stdout):
+        """Test main function with float command line argument."""
         with self.assertRaises(SystemExit) as cm:
             main()
         self.assertEqual(cm.exception.code, 1)
         output = mock_stdout.getvalue()
         self.assertIn("Error:", output)
+        self.assertIn("Invalid input '3.14'", output)
 
 
 if __name__ == '__main__':

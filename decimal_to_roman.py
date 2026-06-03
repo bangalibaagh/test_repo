@@ -47,7 +47,10 @@ def main():
             roman = decimal_to_roman(num)
             print(f"{num} in Roman numerals is: {roman}")
         except ValueError as e:
-            print(f"Error: {e}")
+            if "invalid literal for int()" in str(e):
+                print(f"Error: Invalid input '{sys.argv[1]}' - must be a valid integer")
+            else:
+                print(f"Error: {e}")
             sys.exit(1)
     else:
         # Interactive mode
