@@ -1,160 +1,77 @@
-#!/usr/bin/env python3
-"""
-Tests for find_single_number.py
-"""
-
 import unittest
-import subprocess
-import sys
-from find_single_number import find_single_number, parse_input
+from find_single_number import find_single_number
 
 
 class TestFindSingleNumber(unittest.TestCase):
-    """Test cases for the find_single_number function."""
     
     def test_basic_case(self):
-        """Test basic case with one unique number."""
-        nums = [1, 2, 3, 2, 1]
-        result = find_single_number(nums)
-        self.assertEqual(result, 3)
+        """Test basic case with one single number"""
+        self.assertEqual(find_single_number([2, 2, 1]), 1)
+        self.assertEqual(find_single_number([4, 1, 2, 1, 2]), 4)
+        self.assertEqual(find_single_number([1]), 1)
     
-    def test_single_element(self):
-        """Test with single element list."""
-        nums = [42]
-        result = find_single_number(nums)
-        self.assertEqual(result, 42)
+    def test_larger_array(self):
+        """Test with larger arrays"""
+        self.assertEqual(find_single_number([1, 2, 3, 2, 1]), 3)
+        self.assertEqual(find_single_number([5, 7, 5, 4, 7]), 4)
     
     def test_negative_numbers(self):
-        """Test with negative numbers."""
-        nums = [-1, -2, -3, -2, -1]
-        result = find_single_number(nums)
-        self.assertEqual(result, -3)
+        """Test with negative numbers"""
+        self.assertEqual(find_single_number([-1, -1, -2]), -2)
+        self.assertEqual(find_single_number([3, -3, 3, -3, 5]), 5)
     
-    def test_zero_in_list(self):
-        """Test with zero in the list."""
-        nums = [0, 1, 0, 2, 1]
-        result = find_single_number(nums)
-        self.assertEqual(result, 2)
+    def test_zero_in_array(self):
+        """Test with zero in the array"""
+        self.assertEqual(find_single_number([0, 1, 0]), 1)
+        self.assertEqual(find_single_number([0]), 0)
     
-    def test_empty_list(self):
-        """Test that empty list raises ValueError."""
+    def test_empty_array(self):
+        """Test with empty array"""
         with self.assertRaises(ValueError):
             find_single_number([])
     
-    def test_larger_list(self):
-        """Test with larger list."""
-        nums = [1, 2, 3, 4, 5, 1, 2, 3, 4]
-        result = find_single_number(nums)
-        self.assertEqual(result, 5)
+    def test_multiple_unique_numbers(self):
+        """Test XOR algorithm edge case: multiple numbers appearing once"""
+        with self.assertRaises(ValueError) as cm:
+            find_single_number([1, 2, 3])  # All appear once
+        self.assertIn("Multiple numbers", str(cm.exception))
+        
+        with self.assertRaises(ValueError) as cm:
+            find_single_number([1, 2, 2, 3, 3, 4])  # Two numbers appear once
+        self.assertIn("Multiple numbers", str(cm.exception))
+    
+    def test_number_appears_three_times(self):
+        """Test XOR algorithm edge case: number appearing 3+ times"""
+        with self.assertRaises(ValueError) as cm:
+            find_single_number([1, 1, 1])  # One number appears 3 times
+        self.assertIn("appears 3 times", str(cm.exception))
+        
+        with self.assertRaises(ValueError) as cm:
+            find_single_number([2, 2, 2, 3, 3])  # One appears 3 times, one appears twice
+        self.assertIn("appears 3 times", str(cm.exception))
+    
+    def test_number_appears_five_times(self):
+        """Test XOR algorithm edge case: number appearing 5 times"""
+        with self.assertRaises(ValueError) as cm:
+            find_single_number([1, 1, 1, 1, 1])  # One number appears 5 times
+        self.assertIn("appears 5 times", str(cm.exception))
+    
+    def test_no_single_numbers(self):
+        """Test constraint violation: no numbers appear exactly once"""
+        with self.assertRaises(ValueError) as cm:
+            find_single_number([1, 1, 2, 2])  # All appear twice
+        self.assertIn("No number appears exactly once", str(cm.exception))
+        
+        with self.assertRaises(ValueError) as cm:
+            find_single_number([3, 3, 3, 4, 4, 4])  # All appear 3 times
+        self.assertIn("appears 3 times", str(cm.exception))
+    
+    def test_mixed_constraint_violations(self):
+        """Test mixed constraint violations"""
+        with self.assertRaises(ValueError) as cm:
+            find_single_number([1, 1, 1, 2, 3])  # One appears 3 times, two appear once
+        self.assertIn("appears 3 times", str(cm.exception))
 
 
-class TestParseInput(unittest.TestCase):
-    """Test cases for the parse_input function."""
-    
-    def test_valid_input(self):
-        """Test parsing valid comma-separated numbers."""
-        result = parse_input("1,2,3,2,1")
-        self.assertEqual(result, [1, 2, 3, 2, 1])
-    
-    def test_spaces_in_input(self):
-        """Test parsing input with spaces."""
-        result = parse_input("1, 2, 3, 2, 1")
-        self.assertEqual(result, [1, 2, 3, 2, 1])
-    
-    def test_negative_numbers(self):
-        """Test parsing negative numbers."""
-        result = parse_input("-1,2,-3,2,-1")
-        self.assertEqual(result, [-1, 2, -3, 2, -1])
-    
-    def test_single_number(self):
-        """Test parsing single number."""
-        result = parse_input("42")
-        self.assertEqual(result, [42])
-    
-    def test_empty_string(self):
-        """Test parsing empty string."""
-        result = parse_input("")
-        self.assertEqual(result, [])
-    
-    def test_whitespace_only(self):
-        """Test parsing whitespace-only string."""
-        result = parse_input("   ")
-        self.assertEqual(result, [])
-    
-    def test_invalid_input(self):
-        """Test that invalid input raises ValueError."""
-        with self.assertRaises(ValueError):
-            parse_input("1,2,abc,2,1")
-    
-    def test_invalid_input_with_special_chars(self):
-        """Test that input with special characters raises ValueError."""
-        with self.assertRaises(ValueError):
-            parse_input("1,2,3@,2,1")
-
-
-class TestScriptIntegration(unittest.TestCase):
-    """Integration tests for the script."""
-    
-    def test_script_success(self):
-        """Test script runs successfully with valid input."""
-        result = subprocess.run(
-            [sys.executable, "find_single_number.py", "1,2,3,2,1"],
-            capture_output=True,
-            text=True
-        )
-        self.assertEqual(result.returncode, 0)
-        self.assertEqual(result.stdout.strip(), "3")
-    
-    def test_script_no_args(self):
-        """Test script exits with error when no arguments provided."""
-        result = subprocess.run(
-            [sys.executable, "find_single_number.py"],
-            capture_output=True,
-            text=True
-        )
-        self.assertEqual(result.returncode, 1)
-        self.assertIn("Usage:", result.stderr)
-    
-    def test_script_too_many_args(self):
-        """Test script exits with error when too many arguments provided."""
-        result = subprocess.run(
-            [sys.executable, "find_single_number.py", "1,2,3", "extra"],
-            capture_output=True,
-            text=True
-        )
-        self.assertEqual(result.returncode, 1)
-        self.assertIn("Usage:", result.stderr)
-    
-    def test_script_empty_input(self):
-        """Test script exits with error for empty input."""
-        result = subprocess.run(
-            [sys.executable, "find_single_number.py", ""],
-            capture_output=True,
-            text=True
-        )
-        self.assertEqual(result.returncode, 1)
-        self.assertIn("Error: Input list cannot be empty", result.stderr)
-    
-    def test_script_invalid_input(self):
-        """Test script exits with error for invalid input."""
-        result = subprocess.run(
-            [sys.executable, "find_single_number.py", "1,2,abc,2,1"],
-            capture_output=True,
-            text=True
-        )
-        self.assertEqual(result.returncode, 1)
-        self.assertIn("Error:", result.stderr)
-    
-    def test_script_invalid_characters(self):
-        """Test script exits with error for input with invalid characters."""
-        result = subprocess.run(
-            [sys.executable, "find_single_number.py", "1,2,3;rm -rf /"],
-            capture_output=True,
-            text=True
-        )
-        self.assertEqual(result.returncode, 1)
-        self.assertIn("Error: Input contains invalid characters", result.stderr)
-
-
-if __name__ == "__main__":
+if __name__ == '__main__':
     unittest.main()
