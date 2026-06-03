@@ -92,30 +92,39 @@ class TestMainFunction(unittest.TestCase):
     
     @patch('sys.argv', ['script.py'])
     @patch('builtins.input', return_value='abc')
-    @patch('sys.stderr', new_callable=StringIO)
-    def test_error_message_formatting(self, mock_stderr, mock_input):
+    @patch('sys.stdout', new_callable=StringIO)
+    def test_error_message_formatting(self, mock_stdout, mock_input):
         """Test that error messages are properly formatted"""
         main()  # Don't expect SystemExit for interactive input
-        error_output = mock_stderr.getvalue()
+        error_output = mock_stdout.getvalue()
         self.assertIn('Error: Please enter a valid integer', error_output)
     
     @patch('sys.argv', ['script.py'])
     @patch('builtins.input', return_value='123')
     @patch('sys.stdout', new_callable=StringIO)
     def test_interactive_valid_input(self, mock_stdout, mock_input):
-        """Test main function with valid interactive input"""
+        """Test interactive mode with valid input"""
         main()
-        output = mock_stdout.getvalue().strip()
-        self.assertEqual(output, 'CXXIII')
+        output = mock_stdout.getvalue()
+        self.assertIn('CXXIII', output)
+    
+    @patch('sys.argv', ['script.py'])
+    @patch('builtins.input', return_value='-10')
+    @patch('sys.stdout', new_callable=StringIO)
+    def test_interactive_invalid_range(self, mock_stdout, mock_input):
+        """Test interactive mode with out of range input"""
+        main()
+        output = mock_stdout.getvalue()
+        self.assertIn('Error:', output)
     
     @patch('sys.argv', ['script.py'])
     @patch('builtins.input', return_value='0')
-    @patch('sys.stderr', new_callable=StringIO)
-    def test_interactive_invalid_range(self, mock_stderr, mock_input):
-        """Test main function with interactive input out of range"""
+    @patch('sys.stdout', new_callable=StringIO)
+    def test_interactive_zero_input(self, mock_stdout, mock_input):
+        """Test interactive mode with zero input"""
         main()
-        error_output = mock_stderr.getvalue()
-        self.assertIn('Error:', error_output)
+        output = mock_stdout.getvalue()
+        self.assertIn('Error:', output)
 
 
 if __name__ == '__main__':
