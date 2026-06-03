@@ -61,7 +61,11 @@ def main():
             input_str = sys.argv[1]
         else:
             # Read from stdin
-            input_str = input().strip()
+            try:
+                input_str = input().strip()
+            except EOFError:
+                print("Error: No input provided", file=sys.stderr)
+                sys.exit(1)
         
         if not input_str:
             print("Error: No input provided", file=sys.stderr)
