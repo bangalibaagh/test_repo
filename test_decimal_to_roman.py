@@ -158,18 +158,18 @@ class TestMain:
     @patch('sys.exit')
     @patch('builtins.input', side_effect=KeyboardInterrupt)
     def test_main_keyboard_interrupt(self, mock_input, mock_exit, mock_print):
-        """Test main function handles KeyboardInterrupt."""
+        """Test main function with keyboard interrupt."""
         with patch('decimal_to_roman.decimal_to_roman', side_effect=KeyboardInterrupt):
             main()
-            mock_print.assert_called_once_with("\nOperation cancelled by user")
-            mock_exit.assert_called_once_with(1)
+        mock_print.assert_called_once_with("\nOperation cancelled by user")
+        mock_exit.assert_called_once_with(1)
     
     @patch('sys.argv', ['decimal_to_roman.py', '42'])
     @patch('builtins.print')
     @patch('sys.exit')
-    def test_main_generic_exception(self, mock_exit, mock_print):
-        """Test main function handles generic exceptions."""
+    def test_main_unexpected_exception(self, mock_exit, mock_print):
+        """Test main function with unexpected exception."""
         with patch('decimal_to_roman.decimal_to_roman', side_effect=RuntimeError("Test error")):
             main()
-            mock_print.assert_called_once_with("Unexpected error occurred: RuntimeError: Test error")
-            mock_exit.assert_called_once_with(1)
+        mock_print.assert_called_once_with("Unexpected error occurred: RuntimeError: Test error")
+        mock_exit.assert_called_once_with(1)
