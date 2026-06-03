@@ -1,20 +1,16 @@
 #!/usr/bin/env python3
 """
-Test suite for decimal_to_roman.py
-
-Tests the decimal to Roman numeral conversion functionality.
+Tests for decimal_to_roman module.
 """
 
 import pytest
 import sys
-from io import StringIO
 from unittest.mock import patch
-
 from decimal_to_roman import decimal_to_roman, main
 
 
 class TestDecimalToRoman:
-    """Test cases for the decimal_to_roman function."""
+    """Test cases for decimal_to_roman function."""
     
     def test_single_digits(self):
         """Test conversion of single digit numbers."""
@@ -29,7 +25,7 @@ class TestDecimalToRoman:
         assert decimal_to_roman(9) == "IX"
     
     def test_tens(self):
-        """Test conversion of numbers involving tens."""
+        """Test conversion of multiples of ten."""
         assert decimal_to_roman(10) == "X"
         assert decimal_to_roman(20) == "XX"
         assert decimal_to_roman(30) == "XXX"
@@ -41,7 +37,7 @@ class TestDecimalToRoman:
         assert decimal_to_roman(90) == "XC"
     
     def test_hundreds(self):
-        """Test conversion of numbers involving hundreds."""
+        """Test conversion of multiples of one hundred."""
         assert decimal_to_roman(100) == "C"
         assert decimal_to_roman(200) == "CC"
         assert decimal_to_roman(300) == "CCC"
@@ -53,7 +49,7 @@ class TestDecimalToRoman:
         assert decimal_to_roman(900) == "CM"
     
     def test_thousands(self):
-        """Test conversion of numbers involving thousands."""
+        """Test conversion of multiples of one thousand."""
         assert decimal_to_roman(1000) == "M"
         assert decimal_to_roman(2000) == "MM"
         assert decimal_to_roman(3000) == "MMM"
@@ -72,77 +68,136 @@ class TestDecimalToRoman:
         assert decimal_to_roman(1024) == "MXXIV"
         assert decimal_to_roman(3000) == "MMM"
     
-    def test_edge_cases(self):
-        """Test edge cases at boundaries."""
-        assert decimal_to_roman(1) == "I"  # Minimum value
-        assert decimal_to_roman(3999) == "MMMCMXCIX"  # Maximum value
+    def test_boundary_values(self):
+        """Test conversion of boundary values."""
+        assert decimal_to_roman(1) == "I"
+        assert decimal_to_roman(3999) == "MMMCMXCIX"
     
-    def test_famous_years(self):
-        """Test conversion of some famous years."""
-        assert decimal_to_roman(1776) == "MDCCLXXVI"  # American Independence
-        assert decimal_to_roman(1969) == "MCMLXIX"    # Moon landing
-        assert decimal_to_roman(2000) == "MM"          # Y2K
-    
-    def test_invalid_inputs(self):
-        """Test that invalid inputs raise ValueError."""
-        with pytest.raises(ValueError):
+    def test_invalid_range_low(self):
+        """Test error handling for numbers below valid range."""
+        with pytest.raises(ValueError, match="Number must be between 1 and 3999"):
             decimal_to_roman(0)
-        
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match="Number must be between 1 and 3999"):
             decimal_to_roman(-1)
-        
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match="Number must be between 1 and 3999"):
+            decimal_to_roman(-100)
+    
+    def test_invalid_range_high(self):
+        """Test error handling for numbers above valid range."""
+        with pytest.raises(ValueError, match="Number must be between 1 and 3999"):
             decimal_to_roman(4000)
-        
-        with pytest.raises(ValueError):
-            decimal_to_roman("not a number")
-        
-        with pytest.raises(ValueError):
-            decimal_to_roman(3.14)
+        with pytest.raises(ValueError, match="Number must be between 1 and 3999"):
+            decimal_to_roman(5000)
+    
+    def test_non_integer_types(self):
+        """Test error handling for non-integer input types."""
+        with pytest.raises(ValueError, match="Input must be an integer"):
+            decimal_to_roman("123")
+        with pytest.raises(ValueError, match="Input must be an integer"):
+            decimal_to_roman(123.0)
+        with pytest.raises(ValueError, match="Input must be an integer"):
+            decimal_to_roman(123.5)
+        with pytest.raises(ValueError, match="Input must be an integer"):
+            decimal_to_roman([123])
+        with pytest.raises(ValueError, match="Input must be an integer"):
+            decimal_to_roman({"num": 123})
+        with pytest.raises(ValueError, match="Input must be an integer"):
+            decimal_to_roman(None)
+        with pytest.raises(ValueError, match="Input must be an integer"):
+            decimal_to_roman(True)
+        with pytest.raises(ValueError, match="Input must be an integer"):
+            decimal_to_roman(complex(123, 0))
 
 
-class TestMainFunction:
-    """Test cases for the main function."""
+class TestMain:
+    """Test cases for main function."""
     
     @patch('sys.argv', ['decimal_to_roman.py', '42'])
     @patch('builtins.print')
-    def test_command_line_argument(self, mock_print):
-        """Test main function with command line argument."""
-        result = main()
-        assert result == 0
-        mock_print.assert_called_with("42 in Roman numerals is: XLII")
+    def test_valid_input(self, mock_print):
+        """Test main function with valid input."""
+        main()
+        mock_print.assert_called_once_with("42 in Roman numerals is: XLII")
     
     @patch('sys.argv', ['decimal_to_roman.py'])
-    @patch('builtins.input', return_value='123')
     @patch('builtins.print')
-    def test_interactive_input(self, mock_print, mock_input):
-        """Test main function with interactive input."""
-        result = main()
-        assert result == 0
-        mock_print.assert_called_with("123 in Roman numerals is: CXXIII")
+    @patch('sys.exit')
+    def test_no_arguments(self, mock_exit, mock_print):
+        """Test main function with no arguments."""
+        main()
+        mock_print.assert_called_once_with("Usage: python decimal_to_roman.py <number>")
+        mock_exit.assert_called_once_with(1)
     
-    @patch('sys.argv', ['decimal_to_roman.py', 'invalid'])
+    @patch('sys.argv', ['decimal_to_roman.py', '42', '24'])
     @patch('builtins.print')
-    def test_invalid_command_line_argument(self, mock_print):
-        """Test main function with invalid command line argument."""
-        result = main()
-        assert result == 1
-        mock_print.assert_called_with("Error: Please enter a valid integer.")
+    @patch('sys.exit')
+    def test_too_many_arguments(self, mock_exit, mock_print):
+        """Test main function with too many arguments."""
+        main()
+        mock_print.assert_called_once_with("Usage: python decimal_to_roman.py <number>")
+        mock_exit.assert_called_once_with(1)
     
-    @patch('sys.argv', ['decimal_to_roman.py'])
-    @patch('builtins.input', return_value='0')
+    @patch('sys.argv', ['decimal_to_roman.py', '0'])
     @patch('builtins.print')
-    def test_out_of_range_input(self, mock_print, mock_input):
-        """Test main function with out of range input."""
-        result = main()
-        assert result == 1
-        mock_print.assert_called_with("Error: Number must be an integer between 1 and 3999")
+    @patch('sys.exit')
+    def test_invalid_range(self, mock_exit, mock_print):
+        """Test main function with number outside valid range."""
+        main()
+        mock_print.assert_called_once_with("Error: Number must be between 1 and 3999")
+        mock_exit.assert_called_once_with(1)
     
-    @patch('sys.argv', ['decimal_to_roman.py'])
-    @patch('builtins.input', side_effect=KeyboardInterrupt)
+    @patch('sys.argv', ['decimal_to_roman.py', 'abc'])
     @patch('builtins.print')
-    def test_keyboard_interrupt(self, mock_print, mock_input):
-        """Test main function handles KeyboardInterrupt."""
-        result = main()
-        assert result == 1
-        mock_print.assert_called_with("\nOperation cancelled.")
+    @patch('sys.exit')
+    def test_non_numeric_input(self, mock_exit, mock_print):
+        """Test main function with non-numeric input."""
+        main()
+        mock_print.assert_called_once_with("Error: Argument must be a valid integer")
+        mock_exit.assert_called_once_with(1)
+    
+    @patch('sys.argv', ['decimal_to_roman.py', ''])
+    @patch('builtins.print')
+    @patch('sys.exit')
+    def test_empty_argument(self, mock_exit, mock_print):
+        """Test main function with empty argument."""
+        main()
+        mock_print.assert_called_once_with("Error: Empty argument provided")
+        mock_exit.assert_called_once_with(1)
+    
+    @patch('sys.argv', ['decimal_to_roman.py', '   '])
+    @patch('builtins.print')
+    @patch('sys.exit')
+    def test_whitespace_only_argument(self, mock_exit, mock_print):
+        """Test main function with whitespace-only argument."""
+        main()
+        mock_print.assert_called_once_with("Error: Empty argument provided")
+        mock_exit.assert_called_once_with(1)
+    
+    @patch('sys.argv', ['decimal_to_roman.py', '12.5'])
+    @patch('builtins.print')
+    @patch('sys.exit')
+    def test_float_string_input(self, mock_exit, mock_print):
+        """Test main function with float string input."""
+        main()
+        mock_print.assert_called_once_with("Error: Argument must be a valid integer")
+        mock_exit.assert_called_once_with(1)
+    
+    @patch('sys.argv', ['decimal_to_roman.py', '42'])
+    @patch('builtins.print')
+    @patch('sys.exit')
+    @patch('decimal_to_roman.decimal_to_roman', side_effect=KeyboardInterrupt)
+    def test_keyboard_interrupt(self, mock_decimal_to_roman, mock_exit, mock_print):
+        """Test main function handling KeyboardInterrupt."""
+        main()
+        mock_print.assert_called_once_with("\nOperation cancelled by user")
+        mock_exit.assert_called_once_with(1)
+    
+    @patch('sys.argv', ['decimal_to_roman.py', '42'])
+    @patch('builtins.print')
+    @patch('sys.exit')
+    @patch('decimal_to_roman.decimal_to_roman', side_effect=RuntimeError("Unexpected error"))
+    def test_generic_exception(self, mock_decimal_to_roman, mock_exit, mock_print):
+        """Test main function handling generic exceptions."""
+        main()
+        mock_print.assert_called_once_with("Unexpected error occurred: RuntimeError: Unexpected error")
+        mock_exit.assert_called_once_with(1)
