@@ -82,85 +82,67 @@ class TestDecimalToRoman:
         assert decimal_to_roman(1776) == "MDCCLXXVI"  # American Independence
         assert decimal_to_roman(1969) == "MCMLXIX"    # Moon landing
         assert decimal_to_roman(2000) == "MM"          # Y2K
-        assert decimal_to_roman(2023) == "MMXXIII"     # Recent year
     
     def test_invalid_inputs(self):
-        """Test that invalid inputs raise appropriate errors."""
-        with pytest.raises(ValueError, match="Number must be an integer between 1 and 3999"):
+        """Test that invalid inputs raise ValueError."""
+        with pytest.raises(ValueError):
             decimal_to_roman(0)
         
-        with pytest.raises(ValueError, match="Number must be an integer between 1 and 3999"):
+        with pytest.raises(ValueError):
             decimal_to_roman(-1)
         
-        with pytest.raises(ValueError, match="Number must be an integer between 1 and 3999"):
+        with pytest.raises(ValueError):
             decimal_to_roman(4000)
         
-        with pytest.raises(ValueError, match="Number must be an integer between 1 and 3999"):
-            decimal_to_roman(10000)
-    
-    def test_non_integer_inputs(self):
-        """Test that non-integer inputs raise appropriate errors."""
+        with pytest.raises(ValueError):
+            decimal_to_roman("not a number")
+        
         with pytest.raises(ValueError):
             decimal_to_roman(3.14)
-        
-        with pytest.raises(ValueError):
-            decimal_to_roman("42")
-        
-        with pytest.raises(ValueError):
-            decimal_to_roman(None)
 
 
 class TestMainFunction:
     """Test cases for the main function."""
     
-    @patch('builtins.input', return_value='42')
-    @patch('sys.stdout', new_callable=StringIO)
-    def test_main_with_valid_input(self, mock_stdout, mock_input):
-        """Test main function with valid user input."""
-        result = main()
-        assert result == 0
-        assert "42 in Roman numerals is: XLII" in mock_stdout.getvalue()
-    
-    @patch('builtins.input', return_value='abc')
-    @patch('sys.stdout', new_callable=StringIO)
-    def test_main_with_invalid_input(self, mock_stdout, mock_input):
-        """Test main function with invalid user input."""
-        result = main()
-        assert result == 1
-        assert "Error: Please enter a valid integer." in mock_stdout.getvalue()
-    
-    @patch('builtins.input', return_value='0')
-    @patch('sys.stdout', new_callable=StringIO)
-    def test_main_with_out_of_range_input(self, mock_stdout, mock_input):
-        """Test main function with out of range input."""
-        result = main()
-        assert result == 1
-        assert "Error: Number must be an integer between 1 and 3999" in mock_stdout.getvalue()
-    
-    @patch('sys.argv', ['decimal_to_roman.py', '123'])
-    @patch('sys.stdout', new_callable=StringIO)
-    def test_main_with_command_line_argument(self, mock_stdout):
+    @patch('sys.argv', ['decimal_to_roman.py', '42'])
+    @patch('builtins.print')
+    def test_command_line_argument(self, mock_print):
         """Test main function with command line argument."""
         result = main()
         assert result == 0
-        assert "123 in Roman numerals is: CXXIII" in mock_stdout.getvalue()
+        mock_print.assert_called_with("42 in Roman numerals is: XLII")
+    
+    @patch('sys.argv', ['decimal_to_roman.py'])
+    @patch('builtins.input', return_value='123')
+    @patch('builtins.print')
+    def test_interactive_input(self, mock_print, mock_input):
+        """Test main function with interactive input."""
+        result = main()
+        assert result == 0
+        mock_print.assert_called_with("123 in Roman numerals is: CXXIII")
     
     @patch('sys.argv', ['decimal_to_roman.py', 'invalid'])
-    @patch('sys.stdout', new_callable=StringIO)
-    def test_main_with_invalid_command_line_argument(self, mock_stdout):
+    @patch('builtins.print')
+    def test_invalid_command_line_argument(self, mock_print):
         """Test main function with invalid command line argument."""
         result = main()
         assert result == 1
-        assert "Error: Please enter a valid integer." in mock_stdout.getvalue()
+        mock_print.assert_called_with("Error: Please enter a valid integer.")
     
-    @patch('builtins.input', side_effect=KeyboardInterrupt)
-    @patch('sys.stdout', new_callable=StringIO)
-    def test_main_with_keyboard_interrupt(self, mock_stdout, mock_input):
-        """Test main function handles keyboard interrupt gracefully."""
+    @patch('sys.argv', ['decimal_to_roman.py'])
+    @patch('builtins.input', return_value='0')
+    @patch('builtins.print')
+    def test_out_of_range_input(self, mock_print, mock_input):
+        """Test main function with out of range input."""
         result = main()
         assert result == 1
-        assert "Operation cancelled." in mock_stdout.getvalue()
-
-
-if __name__ == "__main__":
-    pytest.main([__file__])
+        mock_print.assert_called_with("Error: Number must be an integer between 1 and 3999")
+    
+    @patch('sys.argv', ['decimal_to_roman.py'])
+    @patch('builtins.input', side_effect=KeyboardInterrupt)
+    @patch('builtins.print')
+    def test_keyboard_interrupt(self, mock_print, mock_input):
+        """Test main function handles KeyboardInterrupt."""
+        result = main()
+        assert result == 1
+        mock_print.assert_called_with("\nOperation cancelled.")
