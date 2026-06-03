@@ -126,6 +126,24 @@ class TestMain:
         mock_print.assert_called_once_with("Usage: python decimal_to_roman.py <number>")
         mock_exit.assert_called_once_with(1)
     
+    @patch('sys.argv', ['decimal_to_roman.py', '4000'])
+    @patch('builtins.print')
+    @patch('sys.exit')
+    def test_invalid_range(self, mock_exit, mock_print):
+        """Test main function with number out of range."""
+        main()
+        mock_print.assert_called_once_with("Error: Number must be between 1 and 3999")
+        mock_exit.assert_called_once_with(1)
+    
+    @patch('sys.argv', ['decimal_to_roman.py', 'abc'])
+    @patch('builtins.print')
+    @patch('sys.exit')
+    def test_invalid_format(self, mock_exit, mock_print):
+        """Test main function with non-numeric input."""
+        main()
+        mock_print.assert_called_once_with("Error: Argument must be a valid integer")
+        mock_exit.assert_called_once_with(1)
+    
     @patch('sys.argv', ['decimal_to_roman.py', ''])
     @patch('builtins.print')
     @patch('sys.exit')
@@ -135,25 +153,7 @@ class TestMain:
         mock_print.assert_called_once_with("Error: Empty argument provided")
         mock_exit.assert_called_once_with(1)
     
-    @patch('sys.argv', ['decimal_to_roman.py', 'abc'])
-    @patch('builtins.print')
-    @patch('sys.exit')
-    def test_invalid_format(self, mock_exit, mock_print):
-        """Test main function with invalid format argument."""
-        main()
-        mock_print.assert_called_once_with("Error: Argument must be a valid integer")
-        mock_exit.assert_called_once_with(1)
-    
-    @patch('sys.argv', ['decimal_to_roman.py', '0'])
-    @patch('builtins.print')
-    @patch('sys.exit')
-    def test_out_of_range(self, mock_exit, mock_print):
-        """Test main function with out of range input."""
-        main()
-        mock_print.assert_called_once_with("Error: Number must be between 1 and 3999")
-        mock_exit.assert_called_once_with(1)
-    
-    @patch('sys.argv', ['decimal_to_roman.py', '42'])
+    @patch('sys.argv', ['decimal_to_roman.py', '123'])
     @patch('builtins.print')
     @patch('sys.exit')
     @patch('decimal_to_roman.decimal_to_roman', side_effect=KeyboardInterrupt)
@@ -163,7 +163,7 @@ class TestMain:
         mock_print.assert_called_once_with("\nOperation cancelled by user")
         mock_exit.assert_called_once_with(1)
     
-    @patch('sys.argv', ['decimal_to_roman.py', '42'])
+    @patch('sys.argv', ['decimal_to_roman.py', '123'])
     @patch('builtins.print')
     @patch('sys.exit')
     @patch('decimal_to_roman.decimal_to_roman', side_effect=RuntimeError("Test error"))
