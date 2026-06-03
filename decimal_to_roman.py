@@ -7,7 +7,6 @@ Supports numbers from 1 to 3999.
 """
 
 import sys
-from typing import str
 
 
 def decimal_to_roman(num: int) -> str:
