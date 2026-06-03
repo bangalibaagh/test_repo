@@ -105,14 +105,14 @@ class TestTemperatureConversions:
         
         # Test very large numbers
         large_num = 1e100
-        result_c_to_f = celsius_to_fahrenheit(large_num)
-        assert result_c_to_f > large_num  # Should be larger due to conversion
+        assert abs(celsius_to_fahrenheit(large_num) - (large_num * 9/5 + 32)) < large_num * 1e-10
+        assert abs(fahrenheit_to_celsius(large_num) - ((large_num - 32) * 5/9)) < large_num * 1e-10
+        assert abs(celsius_to_kelvin(large_num) - (large_num + 273.15)) < large_num * 1e-10
+        assert abs(kelvin_to_celsius(large_num) - (large_num - 273.15)) < large_num * 1e-10
         
-        result_f_to_c = fahrenheit_to_celsius(large_num)
-        assert abs(result_f_to_c - (large_num - 32) * 5/9) < large_num * 1e-10
-        
-        result_c_to_k = celsius_to_kelvin(large_num)
-        assert abs(result_c_to_k - (large_num + 273.15)) < large_num * 1e-10
-        
-        result_k_to_c = kelvin_to_celsius(large_num)
-        assert abs(result_k_to_c - (large_num - 273.15)) < large_num * 1e-10
+        # Test very small numbers
+        small_num = 1e-100
+        assert abs(celsius_to_fahrenheit(small_num) - (small_num * 9/5 + 32)) < self.TOLERANCE
+        assert abs(fahrenheit_to_celsius(small_num) - ((small_num - 32) * 5/9)) < self.TOLERANCE
+        assert abs(celsius_to_kelvin(small_num) - (small_num + 273.15)) < self.TOLERANCE
+        assert abs(kelvin_to_celsius(small_num) - (small_num - 273.15)) < self.TOLERANCE
