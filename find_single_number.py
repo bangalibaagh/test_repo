@@ -1,93 +1,91 @@
 #!/usr/bin/env python3
 """
-Script to find the single number in a comma-separated list where all other numbers appear exactly twice.
+Script to find the single number that appears once in a list where all other numbers appear twice.
 
-Usage:
-    python find_single_number.py "1,2,1,3,2"
-    echo "1,2,1,3,2" | python find_single_number.py
+Usage: python find_single_number.py "1,2,3,2,1"
 """
 
 import sys
-from typing import List
 
 
-def find_single_number(numbers: List[int]) -> int:
+def find_single_number(nums):
     """
-    Find the number that appears exactly once in a list where all other numbers appear twice.
-    
-    Uses XOR operation which has the property that:
-    - a ^ a = 0 (any number XORed with itself is 0)
-    - a ^ 0 = a (any number XORed with 0 is itself)
-    - XOR is commutative and associative
+    Find the single number that appears once in a list where all other numbers appear twice.
     
     Args:
-        numbers: List of integers where all numbers appear twice except one
+        nums: List of integers
         
     Returns:
-        The number that appears exactly once
+        int: The number that appears exactly once
+        
+    Raises:
+        ValueError: If input is empty or doesn't contain exactly one unique number
     """
+    if not nums:
+        raise ValueError("Input list cannot be empty")
+    
+    # Use XOR to find the single number
+    # XOR of two same numbers is 0
+    # XOR of any number with 0 is the number itself
     result = 0
-    for num in numbers:
+    for num in nums:
         result ^= num
+    
     return result
 
 
-def parse_input(input_str: str) -> List[int]:
+def parse_input(input_str):
     """
     Parse comma-separated string of numbers into a list of integers.
     
     Args:
-        input_str: Comma-separated string of numbers
+        input_str: String containing comma-separated numbers
         
     Returns:
-        List of integers
+        list: List of integers
         
     Raises:
         ValueError: If input contains non-numeric values
     """
+    if not input_str.strip():
+        return []
+    
     try:
         return [int(x.strip()) for x in input_str.split(',')]
     except ValueError as e:
-        raise ValueError(f"Invalid input: all values must be numbers. Error: {e}")
+        raise ValueError(f"Invalid input: {e}")
 
 
 def main():
-    """
-    Main function to handle command line input and find the single number.
-    """
+    """Main function to handle command line input and find single number."""
+    if len(sys.argv) != 2:
+        print("Usage: python find_single_number.py \"1,2,3,2,1\"", file=sys.stderr)
+        sys.exit(1)
+    
+    # Validate input to prevent command injection
+    input_arg = sys.argv[1]
+    if not isinstance(input_arg, str):
+        print("Error: Invalid input type", file=sys.stderr)
+        sys.exit(1)
+    
+    # Additional validation to ensure input only contains expected characters
+    allowed_chars = set('0123456789,- \t')
+    if not all(c in allowed_chars for c in input_arg):
+        print("Error: Input contains invalid characters. Only numbers, commas, spaces, and minus signs are allowed.", file=sys.stderr)
+        sys.exit(1)
+    
     try:
-        # Check if input is provided as command line argument
-        if len(sys.argv) > 1:
-            input_str = sys.argv[1]
-        else:
-            # Read from stdin
-            try:
-                input_str = input().strip()
-            except EOFError:
-                print("Error: No input provided", file=sys.stderr)
-                sys.exit(1)
+        numbers = parse_input(input_arg)
         
-        if not input_str:
-            print("Error: No input provided", file=sys.stderr)
+        if not numbers:
+            print("Error: Input list cannot be empty", file=sys.stderr)
             sys.exit(1)
         
-        numbers = parse_input(input_str)
-        
-        if len(numbers) == 0:
-            print("Error: Empty input", file=sys.stderr)
-            sys.exit(1)
-        
-        single_number = find_single_number(numbers)
-        print(single_number)
+        result = find_single_number(numbers)
+        print(result)
         
     except ValueError as e:
         print(f"Error: {e}", file=sys.stderr)
-        sys.exit(1)
-    except KeyboardInterrupt:
-        print("\nOperation cancelled", file=sys.stderr)
-        sys.exit(1)
-    except Exception as e:
-        print(f"Unexpected error: {e}", file=sys.stderr)
         sys.exit(1)
 
 

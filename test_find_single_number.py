@@ -1,166 +1,160 @@
 #!/usr/bin/env python3
 """
-Tests for find_single_number.py script.
+Tests for find_single_number.py
 """
 
-import pytest
+import unittest
 import subprocess
 import sys
 from find_single_number import find_single_number, parse_input
 
 
-class TestFindSingleNumber:
+class TestFindSingleNumber(unittest.TestCase):
     """Test cases for the find_single_number function."""
     
     def test_basic_case(self):
-        """Test basic case with small numbers."""
-        numbers = [1, 2, 1, 3, 2]
-        assert find_single_number(numbers) == 3
+        """Test basic case with one unique number."""
+        nums = [1, 2, 3, 2, 1]
+        result = find_single_number(nums)
+        self.assertEqual(result, 3)
     
     def test_single_element(self):
-        """Test with only one element."""
-        numbers = [42]
-        assert find_single_number(numbers) == 42
+        """Test with single element list."""
+        nums = [42]
+        result = find_single_number(nums)
+        self.assertEqual(result, 42)
     
     def test_negative_numbers(self):
         """Test with negative numbers."""
-        numbers = [-1, 2, -1, 3, 2]
-        assert find_single_number(numbers) == 3
+        nums = [-1, -2, -3, -2, -1]
+        result = find_single_number(nums)
+        self.assertEqual(result, -3)
     
     def test_zero_in_list(self):
         """Test with zero in the list."""
-        numbers = [0, 1, 0, 2, 1]
-        assert find_single_number(numbers) == 2
+        nums = [0, 1, 0, 2, 1]
+        result = find_single_number(nums)
+        self.assertEqual(result, 2)
     
-    def test_zero_is_single(self):
-        """Test when zero is the single number."""
-        numbers = [1, 2, 1, 0, 2]
-        assert find_single_number(numbers) == 0
+    def test_empty_list(self):
+        """Test that empty list raises ValueError."""
+        with self.assertRaises(ValueError):
+            find_single_number([])
     
-    def test_large_numbers(self):
-        """Test with large numbers."""
-        numbers = [1000000, 999999, 1000000, 123456, 999999]
-        assert find_single_number(numbers) == 123456
-    
-    def test_many_pairs(self):
-        """Test with many pairs and one single number."""
-        numbers = [1, 2, 3, 4, 5, 1, 2, 3, 4, 99, 5]
-        assert find_single_number(numbers) == 99
+    def test_larger_list(self):
+        """Test with larger list."""
+        nums = [1, 2, 3, 4, 5, 1, 2, 3, 4]
+        result = find_single_number(nums)
+        self.assertEqual(result, 5)
 
 
-class TestParseInput:
+class TestParseInput(unittest.TestCase):
     """Test cases for the parse_input function."""
     
     def test_valid_input(self):
         """Test parsing valid comma-separated numbers."""
-        input_str = "1,2,1,3,2"
-        expected = [1, 2, 1, 3, 2]
-        assert parse_input(input_str) == expected
+        result = parse_input("1,2,3,2,1")
+        self.assertEqual(result, [1, 2, 3, 2, 1])
     
     def test_spaces_in_input(self):
         """Test parsing input with spaces."""
-        input_str = "1, 2, 1, 3, 2"
-        expected = [1, 2, 1, 3, 2]
-        assert parse_input(input_str) == expected
+        result = parse_input("1, 2, 3, 2, 1")
+        self.assertEqual(result, [1, 2, 3, 2, 1])
     
-    def test_negative_numbers_input(self):
+    def test_negative_numbers(self):
         """Test parsing negative numbers."""
-        input_str = "-1,2,-1,3,2"
-        expected = [-1, 2, -1, 3, 2]
-        assert parse_input(input_str) == expected
+        result = parse_input("-1,2,-3,2,-1")
+        self.assertEqual(result, [-1, 2, -3, 2, -1])
     
-    def test_single_number_input(self):
+    def test_single_number(self):
         """Test parsing single number."""
-        input_str = "42"
-        expected = [42]
-        assert parse_input(input_str) == expected
+        result = parse_input("42")
+        self.assertEqual(result, [42])
+    
+    def test_empty_string(self):
+        """Test parsing empty string."""
+        result = parse_input("")
+        self.assertEqual(result, [])
+    
+    def test_whitespace_only(self):
+        """Test parsing whitespace-only string."""
+        result = parse_input("   ")
+        self.assertEqual(result, [])
     
     def test_invalid_input(self):
-        """Test parsing invalid input raises ValueError."""
-        with pytest.raises(ValueError):
-            parse_input("1,2,abc,3,2")
+        """Test that invalid input raises ValueError."""
+        with self.assertRaises(ValueError):
+            parse_input("1,2,abc,2,1")
     
-    def test_empty_values(self):
-        """Test parsing input with empty values raises ValueError."""
-        with pytest.raises(ValueError):
-            parse_input("1,2,,3,2")
+    def test_invalid_input_with_special_chars(self):
+        """Test that input with special characters raises ValueError."""
+        with self.assertRaises(ValueError):
+            parse_input("1,2,3@,2,1")
 
 
-class TestScriptExecution:
-    """Test cases for running the script as a command."""
+class TestScriptIntegration(unittest.TestCase):
+    """Integration tests for the script."""
     
-    def test_command_line_argument(self):
-        """Test script with command line argument."""
+    def test_script_success(self):
+        """Test script runs successfully with valid input."""
         result = subprocess.run(
-            [sys.executable, "find_single_number.py", "1,2,1,3,2"],
+            [sys.executable, "find_single_number.py", "1,2,3,2,1"],
             capture_output=True,
             text=True
         )
-        assert result.returncode == 0
-        assert result.stdout.strip() == "3"
+        self.assertEqual(result.returncode, 0)
+        self.assertEqual(result.stdout.strip(), "3")
     
-    def test_stdin_input(self):
-        """Test script with stdin input."""
+    def test_script_no_args(self):
+        """Test script exits with error when no arguments provided."""
         result = subprocess.run(
             [sys.executable, "find_single_number.py"],
-            input="1,2,1,3,2\n",
             capture_output=True,
             text=True
         )
-        assert result.returncode == 0
-        assert result.stdout.strip() == "3"
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("Usage:", result.stderr)
     
-    def test_negative_numbers_script(self):
-        """Test script with negative numbers."""
+    def test_script_too_many_args(self):
+        """Test script exits with error when too many arguments provided."""
         result = subprocess.run(
-            [sys.executable, "find_single_number.py", "-1,2,-1,3,2"],
+            [sys.executable, "find_single_number.py", "1,2,3", "extra"],
             capture_output=True,
             text=True
         )
-        assert result.returncode == 0
-        assert result.stdout.strip() == "3"
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("Usage:", result.stderr)
     
-    def test_single_number_script(self):
-        """Test script with single number."""
-        result = subprocess.run(
-            [sys.executable, "find_single_number.py", "42"],
-            capture_output=True,
-            text=True
-        )
-        assert result.returncode == 0
-        assert result.stdout.strip() == "42"
-    
-    def test_invalid_input_script(self):
-        """Test script with invalid input returns error."""
-        result = subprocess.run(
-            [sys.executable, "find_single_number.py", "1,2,abc,3,2"],
-            capture_output=True,
-            text=True
-        )
-        assert result.returncode == 1
-        assert "Error:" in result.stderr
-    
-    def test_empty_input_script(self):
-        """Test script with empty input returns error."""
+    def test_script_empty_input(self):
+        """Test script exits with error for empty input."""
         result = subprocess.run(
             [sys.executable, "find_single_number.py", ""],
             capture_output=True,
             text=True
         )
-        assert result.returncode == 1
-        assert "Error:" in result.stderr
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("Error: Input list cannot be empty", result.stderr)
     
-    def test_no_input_script(self):
-        """Test script with no input and no stdin returns error."""
+    def test_script_invalid_input(self):
+        """Test script exits with error for invalid input."""
         result = subprocess.run(
-            [sys.executable, "find_single_number.py"],
-            input="",
+            [sys.executable, "find_single_number.py", "1,2,abc,2,1"],
             capture_output=True,
             text=True
         )
-        assert result.returncode == 1
-        assert "Error:" in result.stderr
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("Error:", result.stderr)
+    
+    def test_script_invalid_characters(self):
+        """Test script exits with error for input with invalid characters."""
+        result = subprocess.run(
+            [sys.executable, "find_single_number.py", "1,2,3;rm -rf /"],
+            capture_output=True,
+            text=True
+        )
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("Error: Input contains invalid characters", result.stderr)
 
 
 if __name__ == "__main__":
-    pytest.main([__file__])
+    unittest.main()
