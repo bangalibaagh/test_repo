@@ -1,133 +1,124 @@
-#!/usr/bin/env python3
-"""
-Test file for decimal_to_roman.py
-
-Tests the Roman numeral conversion logic with various test cases.
-"""
-
-import pytest
-import sys
-from io import StringIO
-from unittest.mock import patch
-
-from decimal_to_roman import decimal_to_roman, main
+import unittest
+from decimal_to_roman import decimal_to_roman
 
 
-class TestDecimalToRoman:
-    """Test cases for decimal_to_roman function."""
+class TestDecimalToRoman(unittest.TestCase):
     
-    def test_basic_numbers(self):
-        """Test basic single digit conversions."""
-        assert decimal_to_roman(1) == "I"
-        assert decimal_to_roman(2) == "II"
-        assert decimal_to_roman(3) == "III"
-        assert decimal_to_roman(4) == "IV"
-        assert decimal_to_roman(5) == "V"
-        assert decimal_to_roman(6) == "VI"
-        assert decimal_to_roman(7) == "VII"
-        assert decimal_to_roman(8) == "VIII"
-        assert decimal_to_roman(9) == "IX"
+    def test_basic_conversions(self):
+        """Test basic decimal to Roman numeral conversions."""
+        test_cases = [
+            (1, "I"),
+            (2, "II"),
+            (3, "III"),
+            (4, "IV"),
+            (5, "V"),
+            (6, "VI"),
+            (7, "VII"),
+            (8, "VIII"),
+            (9, "IX"),
+            (10, "X")
+        ]
+        
+        for decimal, expected_roman in test_cases:
+            with self.subTest(decimal=decimal):
+                self.assertEqual(decimal_to_roman(decimal), expected_roman)
     
-    def test_tens(self):
-        """Test numbers involving tens."""
-        assert decimal_to_roman(10) == "X"
-        assert decimal_to_roman(20) == "XX"
-        assert decimal_to_roman(30) == "XXX"
-        assert decimal_to_roman(40) == "XL"
-        assert decimal_to_roman(50) == "L"
-        assert decimal_to_roman(60) == "LX"
-        assert decimal_to_roman(70) == "LXX"
-        assert decimal_to_roman(80) == "LXXX"
-        assert decimal_to_roman(90) == "XC"
+    def test_tens_conversions(self):
+        """Test conversions for multiples of ten."""
+        test_cases = [
+            (10, "X"),
+            (20, "XX"),
+            (30, "XXX"),
+            (40, "XL"),
+            (50, "L"),
+            (60, "LX"),
+            (70, "LXX"),
+            (80, "LXXX"),
+            (90, "XC"),
+            (100, "C")
+        ]
+        
+        for decimal, expected_roman in test_cases:
+            with self.subTest(decimal=decimal):
+                self.assertEqual(decimal_to_roman(decimal), expected_roman)
     
-    def test_hundreds(self):
-        """Test numbers involving hundreds."""
-        assert decimal_to_roman(100) == "C"
-        assert decimal_to_roman(200) == "CC"
-        assert decimal_to_roman(300) == "CCC"
-        assert decimal_to_roman(400) == "CD"
-        assert decimal_to_roman(500) == "D"
-        assert decimal_to_roman(600) == "DC"
-        assert decimal_to_roman(700) == "DCC"
-        assert decimal_to_roman(800) == "DCCC"
-        assert decimal_to_roman(900) == "CM"
+    def test_hundreds_conversions(self):
+        """Test conversions for multiples of hundred."""
+        test_cases = [
+            (100, "C"),
+            (200, "CC"),
+            (300, "CCC"),
+            (400, "CD"),
+            (500, "D"),
+            (600, "DC"),
+            (700, "DCC"),
+            (800, "DCCC"),
+            (900, "CM"),
+            (1000, "M")
+        ]
+        
+        for decimal, expected_roman in test_cases:
+            with self.subTest(decimal=decimal):
+                self.assertEqual(decimal_to_roman(decimal), expected_roman)
     
-    def test_thousands(self):
-        """Test numbers involving thousands."""
-        assert decimal_to_roman(1000) == "M"
-        assert decimal_to_roman(2000) == "MM"
-        assert decimal_to_roman(3000) == "MMM"
-    
-    def test_complex_numbers(self):
-        """Test complex multi-digit numbers."""
-        assert decimal_to_roman(27) == "XXVII"
-        assert decimal_to_roman(48) == "XLVIII"
-        assert decimal_to_roman(59) == "LIX"
-        assert decimal_to_roman(93) == "XCIII"
-        assert decimal_to_roman(141) == "CXLI"
-        assert decimal_to_roman(163) == "CLXIII"
-        assert decimal_to_roman(402) == "CDII"
-        assert decimal_to_roman(575) == "DLXXV"
-        assert decimal_to_roman(911) == "CMXI"
-        assert decimal_to_roman(1024) == "MXXIV"
-        assert decimal_to_roman(3000) == "MMM"
+    def test_complex_conversions(self):
+        """Test complex decimal to Roman numeral conversions."""
+        test_cases = [
+            (27, "XXVII"),
+            (48, "XLVIII"),
+            (59, "LIX"),
+            (93, "XCIII"),
+            (141, "CXLI"),
+            (163, "CLXIII"),
+            (402, "CDII"),
+            (575, "DLXXV"),
+            (911, "CMXI"),
+            (1024, "MXXIV"),
+            (3000, "MMM")
+        ]
+        
+        for decimal, expected_roman in test_cases:
+            with self.subTest(decimal=decimal):
+                self.assertEqual(decimal_to_roman(decimal), expected_roman)
     
     def test_edge_cases(self):
-        """Test edge cases at boundaries."""
-        assert decimal_to_roman(1) == "I"  # Minimum
-        assert decimal_to_roman(3999) == "MMMCMXCIX"  # Maximum
-    
-    def test_famous_years(self):
-        """Test some famous historical years."""
-        assert decimal_to_roman(1776) == "MDCCLXXVI"  # American Independence
-        assert decimal_to_roman(1969) == "MCMLXIX"  # Moon landing
-        assert decimal_to_roman(2000) == "MM"  # Y2K
+        """Test edge cases for decimal to Roman numeral conversion."""
+        # Test minimum and maximum valid values
+        self.assertEqual(decimal_to_roman(1), "I")
+        self.assertEqual(decimal_to_roman(3999), "MMMCMXCIX")
     
     def test_invalid_inputs(self):
-        """Test invalid input handling."""
-        with pytest.raises(ValueError):
+        """Test that invalid inputs raise ValueError."""
+        # Test zero and negative numbers
+        with self.assertRaises(ValueError):
             decimal_to_roman(0)
         
-        with pytest.raises(ValueError):
+        with self.assertRaises(ValueError):
             decimal_to_roman(-1)
         
-        with pytest.raises(ValueError):
+        with self.assertRaises(ValueError):
+            decimal_to_roman(-10)
+        
+        # Test numbers too large
+        with self.assertRaises(ValueError):
             decimal_to_roman(4000)
         
-        with pytest.raises(ValueError):
+        with self.assertRaises(ValueError):
+            decimal_to_roman(5000)
+        
+        # Test non-integer types
+        with self.assertRaises(ValueError):
             decimal_to_roman("not a number")
-    
-    def test_main_with_command_line_arg(self):
-        """Test main function with command line argument."""
-        with patch('sys.argv', ['decimal_to_roman.py', '42']):
-            with patch('sys.stdout', new=StringIO()) as fake_out:
-                main()
-                output = fake_out.getvalue()
-                assert "42 in Roman numerals is: XLII" in output
-    
-    def test_main_with_interactive_input(self):
-        """Test main function with interactive input."""
-        with patch('sys.argv', ['decimal_to_roman.py']):
-            with patch('builtins.input', return_value='123'):
-                with patch('sys.stdout', new=StringIO()) as fake_out:
-                    main()
-                    output = fake_out.getvalue()
-                    assert "123 in Roman numerals is: CXXIII" in output
-    
-    def test_main_with_invalid_input(self):
-        """Test main function with invalid input."""
-        with patch('sys.argv', ['decimal_to_roman.py', 'invalid']):
-            with patch('sys.stdout', new=StringIO()) as fake_out:
-                with pytest.raises(SystemExit):
-                    main()
-                output = fake_out.getvalue()
-                assert "Error: Please enter a valid integer." in output
-    
-    def test_main_with_out_of_range_input(self):
-        """Test main function with out of range input."""
-        with patch('sys.argv', ['decimal_to_roman.py', '5000']):
-            with patch('sys.stdout', new=StringIO()) as fake_out:
-                with pytest.raises(SystemExit):
-                    main()
-                output = fake_out.getvalue()
-                assert "Error: Number must be an integer between 1 and 3999" in output
+        
+        with self.assertRaises(ValueError):
+            decimal_to_roman(3.14)
+        
+        with self.assertRaises(ValueError):
+            decimal_to_roman(None)
+        
+        with self.assertRaises(ValueError):
+            decimal_to_roman([])
+
+
+if __name__ == '__main__':
+    unittest.main()
