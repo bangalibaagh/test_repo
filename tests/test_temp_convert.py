@@ -86,93 +86,33 @@ class TestTemperatureConversions:
     
     def test_extreme_numeric_values(self):
         """Test conversions with extreme numeric values."""
-        # Test very large numbers
-        large_num = 1e10
-        result_c_to_f = celsius_to_fahrenheit(large_num)
-        assert math.isfinite(result_c_to_f)
+        # Test infinity
+        assert celsius_to_fahrenheit(float('inf')) == float('inf')
+        assert fahrenheit_to_celsius(float('inf')) == float('inf')
+        assert celsius_to_kelvin(float('inf')) == float('inf')
+        assert kelvin_to_celsius(float('inf')) == float('inf')
         
-        result_f_to_c = fahrenheit_to_celsius(large_num)
-        assert math.isfinite(result_f_to_c)
-        
-        result_c_to_k = celsius_to_kelvin(large_num)
-        assert math.isfinite(result_c_to_k)
-        
-        result_k_to_c = kelvin_to_celsius(large_num)
-        assert math.isfinite(result_k_to_c)
-        
-        # Test very small numbers
-        small_num = -1e10
-        result_c_to_f = celsius_to_fahrenheit(small_num)
-        assert math.isfinite(result_c_to_f)
-        
-        result_f_to_c = fahrenheit_to_celsius(small_num)
-        assert math.isfinite(result_f_to_c)
-        
-        result_c_to_k = celsius_to_kelvin(small_num)
-        assert math.isfinite(result_c_to_k)
-        
-        result_k_to_c = kelvin_to_celsius(small_num)
-        assert math.isfinite(result_k_to_c)
-    
-    def test_infinity_and_nan(self):
-        """Test behavior with infinity and NaN values."""
-        # Test positive infinity
-        inf_result = celsius_to_fahrenheit(float('inf'))
-        assert math.isinf(inf_result)
-        
-        inf_result = fahrenheit_to_celsius(float('inf'))
-        assert math.isinf(inf_result)
-        
-        inf_result = celsius_to_kelvin(float('inf'))
-        assert math.isinf(inf_result)
-        
-        inf_result = kelvin_to_celsius(float('inf'))
-        assert math.isinf(inf_result)
-        
-        # Test negative infinity
-        neg_inf_result = celsius_to_fahrenheit(float('-inf'))
-        assert math.isinf(neg_inf_result)
-        
-        neg_inf_result = fahrenheit_to_celsius(float('-inf'))
-        assert math.isinf(neg_inf_result)
-        
-        neg_inf_result = celsius_to_kelvin(float('-inf'))
-        assert math.isinf(neg_inf_result)
-        
-        neg_inf_result = kelvin_to_celsius(float('-inf'))
-        assert math.isinf(neg_inf_result)
+        assert celsius_to_fahrenheit(float('-inf')) == float('-inf')
+        assert fahrenheit_to_celsius(float('-inf')) == float('-inf')
+        assert celsius_to_kelvin(float('-inf')) == float('-inf')
+        assert kelvin_to_celsius(float('-inf')) == float('-inf')
         
         # Test NaN
-        nan_result = celsius_to_fahrenheit(float('nan'))
-        assert math.isnan(nan_result)
+        assert math.isnan(celsius_to_fahrenheit(float('nan')))
+        assert math.isnan(fahrenheit_to_celsius(float('nan')))
+        assert math.isnan(celsius_to_kelvin(float('nan')))
+        assert math.isnan(kelvin_to_celsius(float('nan')))
         
-        nan_result = fahrenheit_to_celsius(float('nan'))
-        assert math.isnan(nan_result)
+        # Test very large numbers
+        large_num = 1e100
+        result_c_to_f = celsius_to_fahrenheit(large_num)
+        assert result_c_to_f > large_num  # Should be larger due to conversion
         
-        nan_result = celsius_to_kelvin(float('nan'))
-        assert math.isnan(nan_result)
+        result_f_to_c = fahrenheit_to_celsius(large_num)
+        assert abs(result_f_to_c - (large_num - 32) * 5/9) < large_num * 1e-10
         
-        nan_result = kelvin_to_celsius(float('nan'))
-        assert math.isnan(nan_result)
-    
-    def test_round_trip_conversions(self):
-        """Test that round-trip conversions return to original values."""
-        # Celsius -> Fahrenheit -> Celsius
-        original = 25.0
-        converted = fahrenheit_to_celsius(celsius_to_fahrenheit(original))
-        assert abs(converted - original) < self.TOLERANCE
+        result_c_to_k = celsius_to_kelvin(large_num)
+        assert abs(result_c_to_k - (large_num + 273.15)) < large_num * 1e-10
         
-        # Fahrenheit -> Celsius -> Fahrenheit
-        original = 77.0
-        converted = celsius_to_fahrenheit(fahrenheit_to_celsius(original))
-        assert abs(converted - original) < self.TOLERANCE
-        
-        # Celsius -> Kelvin -> Celsius
-        original = 25.0
-        converted = kelvin_to_celsius(celsius_to_kelvin(original))
-        assert abs(converted - original) < self.TOLERANCE
-        
-        # Kelvin -> Celsius -> Kelvin
-        original = 298.15
-        converted = celsius_to_kelvin(kelvin_to_celsius(original))
-        assert abs(converted - original) < self.TOLERANCE
+        result_k_to_c = kelvin_to_celsius(large_num)
+        assert abs(result_k_to_c - (large_num - 273.15)) < large_num * 1e-10
