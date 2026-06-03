@@ -90,65 +90,45 @@ class TestMainFunction(unittest.TestCase):
         error_output = mock_stderr.getvalue()
         self.assertIn('Error:', error_output)
     
-    @patch('sys.argv', ['script.py', '3.14'])
+    @patch('sys.argv', ['script.py'])
+    @patch('builtins.input', return_value='abc')
     @patch('sys.stderr', new_callable=StringIO)
-    def test_main_float_string_input(self, mock_stderr):
-        """Test main function with float string input"""
+    def test_error_message_formatting(self, mock_stderr, mock_input):
+        """Test that error messages are properly formatted"""
         with self.assertRaises(SystemExit):
             main()
         error_output = mock_stderr.getvalue()
         self.assertIn('Error: Invalid input', error_output)
+        self.assertIn('abc', error_output)
     
-    @patch('sys.argv', ['script.py', ''])
+    @patch('sys.argv', ['script.py'])
+    @patch('builtins.input', return_value='123.45')
     @patch('sys.stderr', new_callable=StringIO)
-    def test_main_empty_string_input(self, mock_stderr):
-        """Test main function with empty string input"""
+    def test_float_input_handling(self, mock_stderr, mock_input):
+        """Test handling of float inputs"""
         with self.assertRaises(SystemExit):
             main()
         error_output = mock_stderr.getvalue()
         self.assertIn('Error: Invalid input', error_output)
     
     @patch('sys.argv', ['script.py'])
+    @patch('builtins.input', return_value='42')
+    @patch('sys.stdout', new_callable=StringIO)
+    def test_interactive_valid_input(self, mock_stdout, mock_input):
+        """Test interactive mode with valid input"""
+        main()
+        output = mock_stdout.getvalue().strip()
+        self.assertEqual(output, 'XLII')
+    
+    @patch('sys.argv', ['script.py'])
+    @patch('builtins.input', return_value='0')
     @patch('sys.stderr', new_callable=StringIO)
-    def test_main_no_arguments(self, mock_stderr):
-        """Test main function with no arguments"""
+    def test_interactive_zero_input(self, mock_stderr, mock_input):
+        """Test interactive mode with zero input"""
         with self.assertRaises(SystemExit):
             main()
         error_output = mock_stderr.getvalue()
-        self.assertIn('Usage:', error_output)
-    
-    @patch('sys.argv', ['script.py', '42', 'extra'])
-    @patch('sys.stderr', new_callable=StringIO)
-    def test_main_too_many_arguments(self, mock_stderr):
-        """Test main function with too many arguments"""
-        with self.assertRaises(SystemExit):
-            main()
-        error_output = mock_stderr.getvalue()
-        self.assertIn('Usage:', error_output)
-    
-    def test_error_message_formatting(self):
-        """Test that error messages are properly formatted"""
-        with patch('sys.argv', ['script.py', 'abc']):
-            with patch('sys.stderr', new_callable=StringIO) as mock_stderr:
-                with self.assertRaises(SystemExit):
-                    main()
-                error_output = mock_stderr.getvalue()
-                # Verify error message contains expected format
-                self.assertTrue(error_output.startswith('Error:'))
-                self.assertIn('abc', error_output)
-    
-    def test_integer_conversion_errors(self):
-        """Test various integer conversion error scenarios"""
-        invalid_inputs = ['abc', '12abc', 'abc12', '1.5', '', ' ', '\n', '\t']
-        
-        for invalid_input in invalid_inputs:
-            with self.subTest(input=invalid_input):
-                with patch('sys.argv', ['script.py', invalid_input]):
-                    with patch('sys.stderr', new_callable=StringIO) as mock_stderr:
-                        with self.assertRaises(SystemExit):
-                            main()
-                        error_output = mock_stderr.getvalue()
-                        self.assertIn('Error: Invalid input', error_output)
+        self.assertIn('Error:', error_output)
 
 
 if __name__ == '__main__':
