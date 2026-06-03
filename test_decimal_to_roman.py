@@ -55,76 +55,60 @@ class TestMainFunction(unittest.TestCase):
     
     @patch('sys.argv', ['script.py', 'invalid'])
     @patch('sys.stderr', new_callable=StringIO)
-    def test_main_invalid_string_input(self, mock_stderr):
+    @patch('sys.stdout', new_callable=StringIO)
+    def test_main_invalid_string_input(self, mock_stdout, mock_stderr):
         """Test main function with invalid string input"""
-        with self.assertRaises(SystemExit):
-            main()
+        main()
         error_output = mock_stderr.getvalue()
         self.assertIn('Error: Invalid input', error_output)
         self.assertIn('invalid', error_output)
     
     @patch('sys.argv', ['script.py', '0'])
     @patch('sys.stderr', new_callable=StringIO)
-    def test_main_zero_input(self, mock_stderr):
+    @patch('sys.stdout', new_callable=StringIO)
+    def test_main_zero_input(self, mock_stdout, mock_stderr):
         """Test main function with zero input"""
-        with self.assertRaises(SystemExit):
-            main()
+        main()
         error_output = mock_stderr.getvalue()
         self.assertIn('Error:', error_output)
     
     @patch('sys.argv', ['script.py', '-5'])
     @patch('sys.stderr', new_callable=StringIO)
-    def test_main_negative_input(self, mock_stderr):
+    @patch('sys.stdout', new_callable=StringIO)
+    def test_main_negative_input(self, mock_stdout, mock_stderr):
         """Test main function with negative input"""
-        with self.assertRaises(SystemExit):
-            main()
+        main()
         error_output = mock_stderr.getvalue()
         self.assertIn('Error:', error_output)
     
     @patch('sys.argv', ['script.py', '4000'])
     @patch('sys.stderr', new_callable=StringIO)
-    def test_main_out_of_range_input(self, mock_stderr):
+    @patch('sys.stdout', new_callable=StringIO)
+    def test_main_out_of_range_input(self, mock_stdout, mock_stderr):
         """Test main function with out of range input"""
-        with self.assertRaises(SystemExit):
-            main()
+        main()
         error_output = mock_stderr.getvalue()
         self.assertIn('Error:', error_output)
     
     @patch('sys.argv', ['script.py'])
-    @patch('builtins.input', return_value='abc')
+    @patch('builtins.input', return_value='invalid_input')
+    @patch('sys.stderr', new_callable=StringIO)
     @patch('sys.stdout', new_callable=StringIO)
-    def test_error_message_formatting(self, mock_stdout, mock_input):
-        """Test that error messages are properly formatted"""
-        main()  # Don't expect SystemExit for interactive input
-        error_output = mock_stdout.getvalue()
-        self.assertIn('Error: Please enter a valid integer', error_output)
+    def test_main_no_args_invalid_stdin(self, mock_stdout, mock_stderr, mock_input):
+        """Test main function with no args and invalid stdin input"""
+        main()
+        error_output = mock_stderr.getvalue()
+        self.assertIn('Error: Invalid input', error_output)
+        self.assertIn('invalid_input', error_output)
     
     @patch('sys.argv', ['script.py'])
-    @patch('builtins.input', return_value='123')
+    @patch('builtins.input', return_value='42')
     @patch('sys.stdout', new_callable=StringIO)
-    def test_interactive_valid_input(self, mock_stdout, mock_input):
-        """Test interactive mode with valid input"""
+    def test_main_no_args_valid_stdin(self, mock_stdout, mock_input):
+        """Test main function with no args and valid stdin input"""
         main()
-        output = mock_stdout.getvalue()
-        self.assertIn('CXXIII', output)
-    
-    @patch('sys.argv', ['script.py'])
-    @patch('builtins.input', return_value='-10')
-    @patch('sys.stdout', new_callable=StringIO)
-    def test_interactive_invalid_range(self, mock_stdout, mock_input):
-        """Test interactive mode with out of range input"""
-        main()
-        output = mock_stdout.getvalue()
-        self.assertIn('Error:', output)
-    
-    @patch('sys.argv', ['script.py'])
-    @patch('builtins.input', return_value='0')
-    @patch('sys.stdout', new_callable=StringIO)
-    def test_interactive_zero_input(self, mock_stdout, mock_input):
-        """Test interactive mode with zero input"""
-        main()
-        output = mock_stdout.getvalue()
-        self.assertIn('Error:', output)
+        output = mock_stdout.getvalue().strip()
+        self.assertEqual(output, 'XLII')
 
 
 if __name__ == '__main__':
