@@ -3,8 +3,8 @@ from unittest.mock import patch, MagicMock
 import sys
 from io import StringIO
 
-# Assuming the main module is imported here
-# import decimal_to_roman
+# Import the main module
+import decimal_to_roman
 
 class TestDecimalToRoman(unittest.TestCase):
     
@@ -16,8 +16,7 @@ class TestDecimalToRoman(unittest.TestCase):
         # when running in interactive mode
         try:
             # Call the main function that should handle KeyboardInterrupt
-            # decimal_to_roman.main()
-            pass  # Placeholder - actual implementation would call main()
+            decimal_to_roman.main()
         except SystemExit:
             pass  # Expected behavior when KeyboardInterrupt is handled
         
