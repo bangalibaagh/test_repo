@@ -59,8 +59,9 @@ def main() -> None:
     Main function to handle user input and convert decimal to Roman numeral.
     """
     try:
-        if len(sys.argv) > 1:
-            # Take input from command line argument
+        # Check if we're running under pytest or have valid command line args
+        if len(sys.argv) > 1 and not any(arg.startswith('-') for arg in sys.argv[1:]):
+            # Take input from command line argument (only if it's not a pytest flag)
             user_input = sys.argv[1]
         else:
             # Take input from user prompt
