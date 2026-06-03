@@ -12,7 +12,7 @@ def decimal_to_roman(num):
         ValueError: If num is not an integer or not in valid range
     """
     # Check if input is an integer
-    if not isinstance(num, int):
+    if not isinstance(num, int) or isinstance(num, bool):
         raise ValueError(f"Input must be an integer, got {type(num).__name__}")
     
     # Check if number is in valid range

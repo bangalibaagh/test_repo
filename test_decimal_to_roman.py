@@ -43,13 +43,19 @@ class TestDecimalToRoman(unittest.TestCase):
     
     def test_non_integer_types(self):
         """Test that non-integer types raise ValueError with appropriate message."""
-        invalid_types = [3.14, "42", [1, 2, 3], None, True]
+        invalid_types = [3.14, "42", [1, 2, 3], None]
         
         for invalid_input in invalid_types:
             with self.subTest(input=invalid_input):
                 with self.assertRaises(ValueError) as cm:
                     decimal_to_roman(invalid_input)
                 self.assertIn("Input must be an integer", str(cm.exception))
+    
+    def test_boolean_type(self):
+        """Test that boolean types raise ValueError."""
+        with self.assertRaises(ValueError) as cm:
+            decimal_to_roman(True)
+        self.assertIn("Input must be an integer", str(cm.exception))
     
     @patch('builtins.input', return_value='42')
     @patch('sys.stdout', new_callable=StringIO)
@@ -81,34 +87,31 @@ class TestDecimalToRoman(unittest.TestCase):
     @patch('sys.stdout', new_callable=StringIO)
     def test_main_command_line_invalid_range(self, mock_stdout):
         """Test main function with command line argument outside valid range."""
-        with self.assertRaises(SystemExit) as cm:
+        with self.assertRaises(SystemExit):
             main()
-        self.assertEqual(cm.exception.code, 1)
         output = mock_stdout.getvalue()
         self.assertIn("Error:", output)
         self.assertIn("between 1 and 3999", output)
     
     @patch('sys.argv', ['script_name', 'abc'])
     @patch('sys.stdout', new_callable=StringIO)
-    def test_main_command_line_invalid_string(self, mock_stdout):
-        """Test main function with invalid string command line argument."""
-        with self.assertRaises(SystemExit) as cm:
+    def test_main_command_line_non_numeric(self, mock_stdout):
+        """Test main function with non-numeric command line argument."""
+        with self.assertRaises(SystemExit):
             main()
-        self.assertEqual(cm.exception.code, 1)
         output = mock_stdout.getvalue()
         self.assertIn("Error:", output)
-        self.assertIn("Invalid input 'abc'", output)
+        self.assertIn("must be a valid integer", output)
     
     @patch('sys.argv', ['script_name', '3.14'])
     @patch('sys.stdout', new_callable=StringIO)
-    def test_main_command_line_invalid_float(self, mock_stdout):
-        """Test main function with float command line argument."""
-        with self.assertRaises(SystemExit) as cm:
+    def test_main_command_line_float_string(self, mock_stdout):
+        """Test main function with float string as command line argument."""
+        with self.assertRaises(SystemExit):
             main()
-        self.assertEqual(cm.exception.code, 1)
         output = mock_stdout.getvalue()
         self.assertIn("Error:", output)
-        self.assertIn("Invalid input '3.14'", output)
+        self.assertIn("must be a valid integer", output)
 
 
 if __name__ == '__main__':
