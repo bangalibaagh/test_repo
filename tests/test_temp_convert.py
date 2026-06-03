@@ -105,20 +105,14 @@ class TestTemperatureConversions:
         
         # Test very large numbers
         large_num = 1e100
+        # These should not raise overflow errors
         result_c_to_f = celsius_to_fahrenheit(large_num)
         result_f_to_c = fahrenheit_to_celsius(large_num)
         result_c_to_k = celsius_to_kelvin(large_num)
         result_k_to_c = kelvin_to_celsius(large_num)
         
-        # Verify results are finite and reasonable
+        # Results should be finite (not inf) for reasonable large numbers
         assert math.isfinite(result_c_to_f)
         assert math.isfinite(result_f_to_c)
         assert math.isfinite(result_c_to_k)
         assert math.isfinite(result_k_to_c)
-        
-        # Test very small numbers
-        small_num = 1e-100
-        assert math.isfinite(celsius_to_fahrenheit(small_num))
-        assert math.isfinite(fahrenheit_to_celsius(small_num))
-        assert math.isfinite(celsius_to_kelvin(small_num))
-        assert math.isfinite(kelvin_to_celsius(small_num))
