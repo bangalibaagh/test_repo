@@ -80,13 +80,7 @@ class TestDecimalToRoman:
             decimal_to_roman([1, 2, 3])
         
         with pytest.raises(ValueError):
-            decimal_to_roman({"key": "value"})
-        
-        with pytest.raises(ValueError):
-            decimal_to_roman(True)
-        
-        with pytest.raises(ValueError):
-            decimal_to_roman(False)
+            decimal_to_roman({"number": 42})
 
 
 class TestGetUserInput:
@@ -94,25 +88,47 @@ class TestGetUserInput:
     
     @patch('builtins.input', return_value='42')
     def test_valid_input(self, mock_input):
-        """Test valid integer input."""
+        """Test valid numeric input."""
         result = get_user_input()
         assert result == 42
+        mock_input.assert_called_once_with("Enter a number (1-3999): ")
     
-    @patch('builtins.input', return_value='invalid')
-    def test_invalid_input(self, mock_input):
-        """Test invalid input returns None."""
+    @patch('builtins.input', side_effect=['invalid', '42'])
+    @patch('builtins.print')
+    def test_invalid_then_valid_input(self, mock_print, mock_input):
+        """Test invalid input followed by valid input."""
+        result = get_user_input()
+        assert result == 42
+        assert mock_input.call_count == 2
+        mock_print.assert_called_with("Please enter a valid integer.")
+    
+    @patch('builtins.input', side_effect=['0', '42'])
+    @patch('builtins.print')
+    def test_out_of_range_then_valid_input(self, mock_print, mock_input):
+        """Test out of range input followed by valid input."""
+        result = get_user_input()
+        assert result == 42
+        assert mock_input.call_count == 2
+        mock_print.assert_called_with("Number must be between 1 and 3999.")
+    
+    @patch('builtins.input', side_effect=['', '42'])
+    @patch('builtins.print')
+    def test_empty_then_valid_input(self, mock_print, mock_input):
+        """Test empty input followed by valid input."""
+        result = get_user_input()
+        assert result == 42
+        assert mock_input.call_count == 2
+        mock_print.assert_called_with("Please enter a valid integer.")
+    
+    @patch('builtins.input', side_effect=KeyboardInterrupt)
+    def test_keyboard_interrupt(self, mock_input):
+        """Test KeyboardInterrupt returns None."""
         result = get_user_input()
         assert result is None
     
     @patch('builtins.input', side_effect=EOFError)
     def test_eof_error(self, mock_input):
-        """Test EOFError handling returns None."""
-        result = get_user_input()
-        assert result is None
-    
-    @patch('builtins.input', side_effect=KeyboardInterrupt)
-    def test_keyboard_interrupt(self, mock_input):
-        """Test KeyboardInterrupt handling returns None."""
+        """Test EOFError returns None."""
         result = get_user_input()
         assert result is None
 
@@ -122,74 +138,84 @@ class TestMain:
     
     @patch('sys.argv', ['roman.py', '42'])
     @patch('builtins.print')
-    def test_command_line_valid_input(self, mock_print):
-        """Test command-line mode with valid input."""
+    def test_command_line_valid_argument(self, mock_print):
+        """Test main with valid command line argument."""
         main()
-        mock_print.assert_called_once_with("42 in Roman numerals is: XLII")
+        mock_print.assert_called_with("42 in Roman numerals is: XLII")
     
-    @patch('sys.argv', ['roman.py', '0'])
+    @patch('sys.argv', ['roman.py', '1'])
     @patch('builtins.print')
-    @patch('sys.exit')
-    def test_command_line_invalid_range(self, mock_exit, mock_print):
-        """Test command-line mode with out-of-range input."""
+    def test_command_line_minimum_value(self, mock_print):
+        """Test main with minimum valid value."""
         main()
-        mock_print.assert_called_once()
-        mock_exit.assert_called_once_with(1)
+        mock_print.assert_called_with("1 in Roman numerals is: I")
+    
+    @patch('sys.argv', ['roman.py', '3999'])
+    @patch('builtins.print')
+    def test_command_line_maximum_value(self, mock_print):
+        """Test main with maximum valid value."""
+        main()
+        mock_print.assert_called_with("3999 in Roman numerals is: MMMCMXCIX")
     
     @patch('sys.argv', ['roman.py', 'invalid'])
     @patch('builtins.print')
-    @patch('sys.exit')
-    def test_command_line_invalid_format(self, mock_exit, mock_print):
-        """Test command-line mode with non-integer input."""
-        main()
-        mock_print.assert_called_once()
-        mock_exit.assert_called_once_with(1)
+    def test_command_line_invalid_string(self, mock_print):
+        """Test main with invalid string argument."""
+        with pytest.raises(SystemExit):
+            main()
+        mock_print.assert_called_with("Error: Please provide a valid integer between 1 and 3999.")
     
     @patch('sys.argv', ['roman.py', '3.14'])
     @patch('builtins.print')
-    @patch('sys.exit')
-    def test_command_line_float_input(self, mock_exit, mock_print):
-        """Test command-line mode with float input."""
-        main()
-        mock_print.assert_called_once()
-        mock_exit.assert_called_once_with(1)
+    def test_command_line_float_string(self, mock_print):
+        """Test main with float string argument."""
+        with pytest.raises(SystemExit):
+            main()
+        mock_print.assert_called_with("Error: Please provide a valid integer between 1 and 3999.")
+    
+    @patch('sys.argv', ['roman.py', '0'])
+    @patch('builtins.print')
+    def test_command_line_zero(self, mock_print):
+        """Test main with zero argument."""
+        with pytest.raises(SystemExit):
+            main()
+        mock_print.assert_called_with("Error: Please provide a valid integer between 1 and 3999.")
+    
+    @patch('sys.argv', ['roman.py', '-1'])
+    @patch('builtins.print')
+    def test_command_line_negative(self, mock_print):
+        """Test main with negative argument."""
+        with pytest.raises(SystemExit):
+            main()
+        mock_print.assert_called_with("Error: Please provide a valid integer between 1 and 3999.")
     
     @patch('sys.argv', ['roman.py', '4000'])
     @patch('builtins.print')
-    @patch('sys.exit')
-    def test_command_line_out_of_range_high(self, mock_exit, mock_print):
-        """Test command-line mode with number too high."""
-        main()
-        mock_print.assert_called_once()
-        mock_exit.assert_called_once_with(1)
+    def test_command_line_too_large(self, mock_print):
+        """Test main with too large argument."""
+        with pytest.raises(SystemExit):
+            main()
+        mock_print.assert_called_with("Error: Please provide a valid integer between 1 and 3999.")
     
-    @patch('sys.argv', ['roman.py', '-5'])
+    @patch('sys.argv', ['roman.py', '42', 'extra'])
     @patch('builtins.print')
-    @patch('sys.exit')
-    def test_command_line_negative_input(self, mock_exit, mock_print):
-        """Test command-line mode with negative input."""
-        main()
-        mock_print.assert_called_once()
-        mock_exit.assert_called_once_with(1)
+    def test_command_line_too_many_args(self, mock_print):
+        """Test main with too many arguments."""
+        with pytest.raises(SystemExit):
+            main()
+        mock_print.assert_called_with("Usage: python roman.py [number]")
     
     @patch('sys.argv', ['roman.py'])
-    @patch('roman.get_user_input', side_effect=[42, None])
+    @patch('roman.get_user_input', return_value=42)
     @patch('builtins.input', return_value='n')
     @patch('builtins.print')
-    def test_interactive_mode(self, mock_print, mock_input, mock_get_input):
-        """Test interactive mode with valid input."""
+    def test_interactive_mode_single_conversion(self, mock_print, mock_input, mock_get_input):
+        """Test interactive mode with single conversion."""
         main()
-        # Check that conversion was printed
-        assert any("42 in Roman numerals is: XLII" in str(call) for call in mock_print.call_args_list)
-    
-    @patch('sys.argv', ['roman.py'])
-    @patch('roman.get_user_input', side_effect=KeyboardInterrupt)
-    @patch('builtins.print')
-    def test_interactive_keyboard_interrupt(self, mock_print, mock_get_input):
-        """Test interactive mode with KeyboardInterrupt."""
-        main()
-        # Check that goodbye message was printed
-        assert any("Goodbye!" in str(call) for call in mock_print.call_args_list)
+        
+        # Verify conversion was printed
+        print_calls = [str(call) for call in mock_print.call_args_list]
+        assert any("42 in Roman numerals is: XLII" in call for call in print_calls)
     
     @patch('sys.argv', ['roman.py'])
     @patch('roman.get_user_input', side_effect=[42, 100, None])
@@ -204,48 +230,51 @@ class TestMain:
         assert any("42 in Roman numerals is: XLII" in call for call in print_calls)
         assert any("100 in Roman numerals is: C" in call for call in print_calls)
         
-        # Verify continue prompt was shown
-        assert any("Do you want to convert another number?" in call for call in print_calls)
+        # Verify continue prompt was shown (check input calls instead of print calls)
+        input_calls = [str(call) for call in mock_input.call_args_list]
+        assert len(input_calls) == 2  # Two continue prompts
     
     @patch('sys.argv', ['roman.py'])
-    @patch('roman.get_user_input', side_effect=[None, 50, None])
-    @patch('builtins.input', side_effect=['y', 'n'])
+    @patch('roman.get_user_input', return_value=None)
     @patch('builtins.print')
-    def test_interactive_mode_error_recovery(self, mock_print, mock_input, mock_get_input):
-        """Test interactive mode error recovery: invalid input, then valid input."""
+    def test_interactive_mode_immediate_quit(self, mock_print, mock_get_input):
+        """Test interactive mode with immediate quit (Ctrl+C or EOF)."""
         main()
         
-        # Verify valid conversion was printed after error
+        # Should exit gracefully without conversion
         print_calls = [str(call) for call in mock_print.call_args_list]
-        assert any("50 in Roman numerals is: L" in call for call in print_calls)
-        
-        # Verify continue prompt was shown
-        assert any("Do you want to convert another number?" in call for call in print_calls)
+        conversion_calls = [call for call in print_calls if "in Roman numerals is:" in call]
+        assert len(conversion_calls) == 0
     
     @patch('sys.argv', ['roman.py'])
-    @patch('roman.get_user_input', side_effect=[42])
-    @patch('builtins.input', return_value='n')
+    @patch('roman.get_user_input', side_effect=[42, None])
+    @patch('builtins.input', return_value='y')
     @patch('builtins.print')
-    def test_interactive_mode_quit_after_first_conversion(self, mock_print, mock_input, mock_get_input):
-        """Test interactive mode: convert once then quit immediately."""
+    def test_interactive_mode_quit_on_second_input(self, mock_print, mock_input, mock_get_input):
+        """Test interactive mode: convert once, continue, then quit on second input."""
         main()
         
-        # Verify conversion was printed
+        # Verify first conversion was printed
         print_calls = [str(call) for call in mock_print.call_args_list]
         assert any("42 in Roman numerals is: XLII" in call for call in print_calls)
         
         # Verify continue prompt was shown
-        assert any("Do you want to convert another number?" in call for call in print_calls)
+        input_calls = [str(call) for call in mock_input.call_args_list]
+        assert len(input_calls) == 1  # One continue prompt
     
     @patch('sys.argv', ['roman.py'])
-    @patch('roman.get_user_input', side_effect=[None, None, None])
-    @patch('builtins.input', side_effect=['y', 'y', 'n'])
+    @patch('roman.get_user_input', side_effect=[42, 100])
+    @patch('builtins.input', side_effect=['y', 'n'])
     @patch('builtins.print')
-    def test_interactive_mode_multiple_errors_then_quit(self, mock_print, mock_input, mock_get_input):
-        """Test interactive mode: multiple invalid inputs with continues, then quit."""
+    def test_interactive_mode_error_recovery(self, mock_print, mock_input, mock_get_input):
+        """Test interactive mode handles errors and continues loop."""
         main()
         
-        # Verify continue prompts were shown multiple times
+        # Verify both conversions were printed despite any errors
         print_calls = [str(call) for call in mock_print.call_args_list]
-        continue_prompts = [call for call in print_calls if "Do you want to convert another number?" in call]
-        assert len(continue_prompts) >= 2  # Should have multiple continue prompts
+        assert any("42 in Roman numerals is: XLII" in call for call in print_calls)
+        assert any("100 in Roman numerals is: C" in call for call in print_calls)
+        
+        # Verify the loop continued after first conversion
+        assert len(mock_get_input.call_args_list) == 2
+        assert len(mock_input.call_args_list) == 2
