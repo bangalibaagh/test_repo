@@ -81,13 +81,13 @@ class TestGetUserInput:
     
     @patch('builtins.input', return_value='42')
     def test_valid_input(self, mock_input):
-        """Test valid integer input."""
+        """Test valid numeric input."""
         result = get_user_input()
         assert result == 42
     
     @patch('builtins.input', return_value='invalid')
     def test_invalid_input(self, mock_input):
-        """Test invalid input returns None."""
+        """Test invalid non-numeric input."""
         result = get_user_input()
         assert result is None
     
@@ -99,13 +99,13 @@ class TestGetUserInput:
     
     @patch('builtins.input', side_effect=EOFError)
     def test_eof_error(self, mock_input):
-        """Test EOFError returns None."""
+        """Test EOFError handling."""
         result = get_user_input()
         assert result is None
     
     @patch('builtins.input', side_effect=KeyboardInterrupt)
     def test_keyboard_interrupt(self, mock_input):
-        """Test KeyboardInterrupt returns None."""
+        """Test KeyboardInterrupt handling."""
         result = get_user_input()
         assert result is None
 
@@ -132,8 +132,8 @@ class TestMain:
     
     @patch('sys.argv', ['roman.py', 'invalid'])
     @patch('sys.stderr', new_callable=StringIO)
-    def test_command_line_non_integer(self, mock_stderr):
-        """Test main with non-integer command-line argument."""
+    def test_command_line_non_numeric_input(self, mock_stderr):
+        """Test main with non-numeric command-line argument."""
         with pytest.raises(SystemExit):
             main()
         error_output = mock_stderr.getvalue()
