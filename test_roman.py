@@ -145,6 +145,33 @@ class TestMain:
         mock_print.assert_called_once()
         mock_exit.assert_called_once_with(1)
     
+    @patch('sys.argv', ['roman.py', '3.14'])
+    @patch('builtins.print')
+    @patch('sys.exit')
+    def test_command_line_float_input(self, mock_exit, mock_print):
+        """Test command-line mode with float input."""
+        main()
+        mock_print.assert_called_once()
+        mock_exit.assert_called_once_with(1)
+    
+    @patch('sys.argv', ['roman.py', '4000'])
+    @patch('builtins.print')
+    @patch('sys.exit')
+    def test_command_line_out_of_range_high(self, mock_exit, mock_print):
+        """Test command-line mode with number too high."""
+        main()
+        mock_print.assert_called_once()
+        mock_exit.assert_called_once_with(1)
+    
+    @patch('sys.argv', ['roman.py', '-5'])
+    @patch('builtins.print')
+    @patch('sys.exit')
+    def test_command_line_negative_input(self, mock_exit, mock_print):
+        """Test command-line mode with negative input."""
+        main()
+        mock_print.assert_called_once()
+        mock_exit.assert_called_once_with(1)
+    
     @patch('sys.argv', ['roman.py'])
     @patch('roman.get_user_input', side_effect=[42, None])
     @patch('builtins.input', return_value='n')
@@ -163,3 +190,62 @@ class TestMain:
         main()
         # Check that goodbye message was printed
         assert any("Goodbye!" in str(call) for call in mock_print.call_args_list)
+    
+    @patch('sys.argv', ['roman.py'])
+    @patch('roman.get_user_input', side_effect=[42, 100, None])
+    @patch('builtins.input', side_effect=['y', 'n'])
+    @patch('builtins.print')
+    def test_interactive_mode_complete_flow_continue_then_quit(self, mock_print, mock_input, mock_get_input):
+        """Test complete interactive flow: convert, continue, convert again, then quit."""
+        main()
+        
+        # Verify both conversions were printed
+        print_calls = [str(call) for call in mock_print.call_args_list]
+        assert any("42 in Roman numerals is: XLII" in call for call in print_calls)
+        assert any("100 in Roman numerals is: C" in call for call in print_calls)
+        
+        # Verify continue prompt was shown
+        assert any("Do you want to convert another number?" in call for call in print_calls)
+    
+    @patch('sys.argv', ['roman.py'])
+    @patch('roman.get_user_input', side_effect=[None, 50, None])
+    @patch('builtins.input', side_effect=['y', 'n'])
+    @patch('builtins.print')
+    def test_interactive_mode_error_recovery(self, mock_print, mock_input, mock_get_input):
+        """Test interactive mode error recovery: invalid input, then valid input."""
+        main()
+        
+        # Verify valid conversion was printed after error
+        print_calls = [str(call) for call in mock_print.call_args_list]
+        assert any("50 in Roman numerals is: L" in call for call in print_calls)
+        
+        # Verify continue prompt was shown
+        assert any("Do you want to convert another number?" in call for call in print_calls)
+    
+    @patch('sys.argv', ['roman.py'])
+    @patch('roman.get_user_input', side_effect=[42])
+    @patch('builtins.input', return_value='n')
+    @patch('builtins.print')
+    def test_interactive_mode_quit_after_first_conversion(self, mock_print, mock_input, mock_get_input):
+        """Test interactive mode: convert once then quit immediately."""
+        main()
+        
+        # Verify conversion was printed
+        print_calls = [str(call) for call in mock_print.call_args_list]
+        assert any("42 in Roman numerals is: XLII" in call for call in print_calls)
+        
+        # Verify continue prompt was shown
+        assert any("Do you want to convert another number?" in call for call in print_calls)
+    
+    @patch('sys.argv', ['roman.py'])
+    @patch('roman.get_user_input', side_effect=[None, None, None])
+    @patch('builtins.input', side_effect=['y', 'y', 'n'])
+    @patch('builtins.print')
+    def test_interactive_mode_multiple_errors_then_quit(self, mock_print, mock_input, mock_get_input):
+        """Test interactive mode: multiple invalid inputs with continues, then quit."""
+        main()
+        
+        # Verify continue prompts were shown multiple times
+        print_calls = [str(call) for call in mock_print.call_args_list]
+        continue_prompts = [call for call in print_calls if "Do you want to convert another number?" in call]
+        assert len(continue_prompts) >= 2  # Should have multiple continue prompts
