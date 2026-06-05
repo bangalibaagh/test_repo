@@ -41,18 +41,19 @@ def get_user_input() -> Optional[int]:
     """Get and validate user input.
     
     Returns:
-        Valid integer or None if invalid input
+        Valid integer or None if invalid input or EOF
         
     Raises:
         KeyboardInterrupt: If user presses Ctrl+C
-        EOFError: If user presses Ctrl+D or EOF
     """
     try:
         user_input = input("Enter a decimal number (1-3999): ").strip()
         return int(user_input)
     except ValueError:
         return None
-    except (EOFError, KeyboardInterrupt):
+    except EOFError:
+        return None
+    except KeyboardInterrupt:
         raise
 
 
