@@ -83,6 +83,7 @@ def main() -> None:
                     
             except ValueError as e:
                 print(f"Error: {e}")
+                # Continue the loop after handling ValueError
             except KeyboardInterrupt:
                 print("\nGoodbye!")
                 break

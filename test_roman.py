@@ -74,6 +74,19 @@ class TestDecimalToRoman:
         
         with pytest.raises(ValueError):
             decimal_to_roman(None)
+        
+        # Test additional non-integer types
+        with pytest.raises(ValueError):
+            decimal_to_roman([1, 2, 3])
+        
+        with pytest.raises(ValueError):
+            decimal_to_roman({"key": "value"})
+        
+        with pytest.raises(ValueError):
+            decimal_to_roman(True)
+        
+        with pytest.raises(ValueError):
+            decimal_to_roman(False)
 
 
 class TestGetUserInput:
@@ -150,6 +163,15 @@ class TestMain:
         mock_print.assert_called_once()
         mock_exit.assert_called_once_with(1)
     
+    @patch('sys.argv', ['roman.py', '4000'])
+    @patch('builtins.print')
+    @patch('sys.exit')
+    def test_command_line_out_of_range_input(self, mock_exit, mock_print):
+        """Test main with out-of-range command-line argument."""
+        main()
+        mock_print.assert_called_once()
+        mock_exit.assert_called_once_with(1)
+    
     @patch('sys.argv', ['roman.py'])
     @patch('roman.get_user_input')
     @patch('builtins.input')
@@ -193,3 +215,19 @@ class TestMain:
         # Check that goodbye message was printed
         print_calls = [call.args[0] for call in mock_print.call_args_list]
         assert any("Goodbye!" in call for call in print_calls)
+    
+    @patch('sys.argv', ['roman.py'])
+    @patch('roman.get_user_input')
+    @patch('builtins.input')
+    @patch('builtins.print')
+    def test_interactive_mode_out_of_range_error(self, mock_print, mock_input, mock_get_input):
+        """Test interactive mode with out-of-range number that causes ValueError."""
+        mock_get_input.side_effect = [4000, 42]  # First out of range, then valid
+        mock_input.return_value = 'n'
+        
+        main()
+        
+        # Check that error message was printed and loop continued
+        print_calls = [call.args[0] for call in mock_print.call_args_list]
+        assert any("Error:" in call for call in print_calls)
+        assert any("42 in Roman numerals is: XLII" in call for call in print_calls)
