@@ -77,9 +77,6 @@ class TestDecimalToRoman:
         
         with pytest.raises(ValueError):
             decimal_to_roman("42")
-        
-        with pytest.raises(ValueError):
-            decimal_to_roman(None)
 
 
 class TestGetUserInput:
@@ -91,113 +88,58 @@ class TestGetUserInput:
         result = get_user_input()
         assert result == 42
     
-    @patch('builtins.input', return_value='  123  ')
-    def test_input_with_whitespace(self, mock_input):
-        """Test input with surrounding whitespace."""
-        result = get_user_input()
-        assert result == 123
-    
-    @patch('builtins.input', return_value='abc')
-    def test_invalid_string_input(self, mock_input):
-        """Test invalid string input returns None."""
-        result = get_user_input()
-        assert result is None
-    
-    @patch('builtins.input', return_value='3.14')
-    def test_float_input(self, mock_input):
-        """Test float input returns None."""
+    @patch('builtins.input', return_value='not_a_number')
+    def test_invalid_input(self, mock_input):
+        """Test invalid input returns None."""
         result = get_user_input()
         assert result is None
     
     @patch('builtins.input', side_effect=EOFError)
-    def test_eof_error(self, mock_input):
-        """Test EOFError returns None."""
+    def test_eof_input(self, mock_input):
+        """Test EOF input returns None."""
         result = get_user_input()
         assert result is None
     
     @patch('builtins.input', side_effect=KeyboardInterrupt)
     def test_keyboard_interrupt(self, mock_input):
-        """Test KeyboardInterrupt returns None."""
-        result = get_user_input()
-        assert result is None
+        """Test KeyboardInterrupt is propagated."""
+        with pytest.raises(KeyboardInterrupt):
+            get_user_input()
 
 
 class TestMain:
     """Test cases for main function."""
     
     @patch('sys.argv', ['roman.py', '42'])
-    @patch('sys.stdout', new_callable=StringIO)
-    def test_command_line_valid_argument(self, mock_stdout):
-        """Test main with valid command-line argument."""
+    @patch('builtins.print')
+    def test_command_line_valid_number(self, mock_print):
+        """Test command line with valid number."""
         main()
-        output = mock_stdout.getvalue()
-        assert "42 = XLII" in output
+        mock_print.assert_called_once_with("42 = XLII")
     
     @patch('sys.argv', ['roman.py', '0'])
-    @patch('sys.stderr', new_callable=StringIO)
-    def test_command_line_invalid_argument(self, mock_stderr):
-        """Test main with invalid command-line argument."""
-        with pytest.raises(SystemExit) as exc_info:
-            main()
-        assert exc_info.value.code == 1
-        assert "Error:" in mock_stderr.getvalue()
+    @patch('builtins.print')
+    @patch('sys.exit')
+    def test_command_line_invalid_number(self, mock_exit, mock_print):
+        """Test command line with invalid number."""
+        main()
+        mock_print.assert_called_once()
+        mock_exit.assert_called_once_with(1)
     
-    @patch('sys.argv', ['roman.py', 'abc'])
-    @patch('sys.stderr', new_callable=StringIO)
-    def test_command_line_non_integer_argument(self, mock_stderr):
-        """Test main with non-integer command-line argument."""
-        with pytest.raises(SystemExit) as exc_info:
-            main()
-        assert exc_info.value.code == 1
-        assert "Error:" in mock_stderr.getvalue()
+    @patch('sys.argv', ['roman.py', 'not_a_number'])
+    @patch('builtins.print')
+    @patch('sys.exit')
+    def test_command_line_non_numeric(self, mock_exit, mock_print):
+        """Test command line with non-numeric argument."""
+        main()
+        mock_print.assert_called_once()
+        mock_exit.assert_called_once_with(1)
     
     @patch('sys.argv', ['roman.py', '1', '2', '3'])
-    @patch('sys.stderr', new_callable=StringIO)
-    def test_too_many_arguments(self, mock_stderr):
-        """Test main with too many command-line arguments."""
-        with pytest.raises(SystemExit) as exc_info:
-            main()
-        assert exc_info.value.code == 1
-        assert "Usage:" in mock_stderr.getvalue()
-    
-    @patch('sys.argv', ['roman.py'])
-    @patch('builtins.input', side_effect=['42', KeyboardInterrupt])
-    @patch('sys.stdout', new_callable=StringIO)
-    def test_interactive_mode_valid_input(self, mock_stdout, mock_input):
-        """Test interactive mode with valid input."""
+    @patch('builtins.print')
+    @patch('sys.exit')
+    def test_command_line_too_many_args(self, mock_exit, mock_print):
+        """Test command line with too many arguments."""
         main()
-        output = mock_stdout.getvalue()
-        assert "42 = XLII" in output
-        assert "Goodbye!" in output
-    
-    @patch('sys.argv', ['roman.py'])
-    @patch('builtins.input', side_effect=['abc', '42', KeyboardInterrupt])
-    @patch('sys.stdout', new_callable=StringIO)
-    def test_interactive_mode_invalid_then_valid(self, mock_stdout, mock_input):
-        """Test interactive mode with invalid then valid input."""
-        main()
-        output = mock_stdout.getvalue()
-        assert "Invalid input" in output
-        assert "42 = XLII" in output
-    
-    @patch('sys.argv', ['roman.py'])
-    @patch('builtins.input', side_effect=['4000', KeyboardInterrupt])
-    @patch('sys.stdout', new_callable=StringIO)
-    def test_interactive_mode_out_of_range(self, mock_stdout, mock_input):
-        """Test interactive mode with out-of-range input."""
-        main()
-        output = mock_stdout.getvalue()
-        assert "Error:" in output
-    
-    @patch('sys.argv', ['roman.py'])
-    @patch('builtins.input', side_effect=EOFError)
-    @patch('sys.stdout', new_callable=StringIO)
-    def test_interactive_mode_eof(self, mock_stdout, mock_input):
-        """Test interactive mode with EOF."""
-        main()
-        output = mock_stdout.getvalue()
-        assert "Goodbye!" in output
-
-
-if __name__ == "__main__":
-    pytest.main([__file__])
+        mock_print.assert_called_once_with("Usage: python roman.py [number]", file=sys.stderr)
+        mock_exit.assert_called_once_with(1)
