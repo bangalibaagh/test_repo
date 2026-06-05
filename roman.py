@@ -15,9 +15,9 @@ def decimal_to_roman(num: int) -> str:
         Roman numeral representation as string
         
     Raises:
-        ValueError: If number is not in valid range (1-3999)
+        ValueError: If number is not in valid range (1-3999) or not an integer
     """
-    if not isinstance(num, int) or num < 1 or num > 3999:
+    if not isinstance(num, int) or isinstance(num, bool) or num < 1 or num > 3999:
         raise ValueError("Number must be an integer between 1 and 3999")
     
     # Roman numeral mappings in descending order
@@ -84,6 +84,7 @@ def main() -> None:
             except ValueError as e:
                 print(f"Error: {e}")
                 # Continue the loop after handling ValueError
+                continue
             except KeyboardInterrupt:
                 print("\nGoodbye!")
                 break
