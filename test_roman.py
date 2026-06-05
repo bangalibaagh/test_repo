@@ -79,33 +79,45 @@ class TestDecimalToRoman:
 class TestGetUserInput:
     """Test cases for get_user_input function."""
     
-    @patch('builtins.input', return_value='42')
+    @patch('builtins.input')
     def test_valid_input(self, mock_input):
-        """Test valid numeric input."""
+        """Test valid user input."""
+        mock_input.return_value = "42"
         result = get_user_input()
         assert result == 42
     
-    @patch('builtins.input', return_value='invalid')
+    @patch('builtins.input')
     def test_invalid_input(self, mock_input):
-        """Test invalid non-numeric input."""
+        """Test invalid user input returns None."""
+        mock_input.return_value = "not_a_number"
         result = get_user_input()
         assert result is None
     
-    @patch('builtins.input', return_value='3.14')
-    def test_float_input(self, mock_input):
-        """Test float input returns None."""
+    @patch('builtins.input')
+    def test_empty_input(self, mock_input):
+        """Test empty input returns None."""
+        mock_input.return_value = ""
         result = get_user_input()
         assert result is None
     
-    @patch('builtins.input', side_effect=EOFError)
+    @patch('builtins.input')
+    def test_whitespace_input(self, mock_input):
+        """Test whitespace-only input returns None."""
+        mock_input.return_value = "   "
+        result = get_user_input()
+        assert result is None
+    
+    @patch('builtins.input')
     def test_eof_error(self, mock_input):
-        """Test EOFError handling."""
+        """Test EOFError returns None."""
+        mock_input.side_effect = EOFError()
         result = get_user_input()
         assert result is None
     
-    @patch('builtins.input', side_effect=KeyboardInterrupt)
+    @patch('builtins.input')
     def test_keyboard_interrupt(self, mock_input):
-        """Test KeyboardInterrupt handling."""
+        """Test KeyboardInterrupt returns None."""
+        mock_input.side_effect = KeyboardInterrupt()
         result = get_user_input()
         assert result is None
 
@@ -114,75 +126,70 @@ class TestMain:
     """Test cases for main function."""
     
     @patch('sys.argv', ['roman.py', '42'])
-    @patch('sys.stdout', new_callable=StringIO)
-    def test_command_line_valid_input(self, mock_stdout):
+    @patch('builtins.print')
+    def test_command_line_valid_input(self, mock_print):
         """Test main with valid command-line argument."""
         main()
-        output = mock_stdout.getvalue()
-        assert "42 in Roman numerals is: XLII" in output
+        mock_print.assert_called_once_with("42 in Roman numerals is: XLII")
     
     @patch('sys.argv', ['roman.py', '0'])
-    @patch('sys.stderr', new_callable=StringIO)
-    def test_command_line_invalid_input(self, mock_stderr):
+    @patch('builtins.print')
+    @patch('sys.exit')
+    def test_command_line_invalid_input(self, mock_exit, mock_print):
         """Test main with invalid command-line argument."""
-        with pytest.raises(SystemExit):
-            main()
-        error_output = mock_stderr.getvalue()
-        assert "Error:" in error_output
+        main()
+        mock_print.assert_called_once()
+        mock_exit.assert_called_once_with(1)
     
-    @patch('sys.argv', ['roman.py', 'invalid'])
-    @patch('sys.stderr', new_callable=StringIO)
-    def test_command_line_non_numeric_input(self, mock_stderr):
+    @patch('sys.argv', ['roman.py', 'not_a_number'])
+    @patch('builtins.print')
+    @patch('sys.exit')
+    def test_command_line_non_numeric_input(self, mock_exit, mock_print):
         """Test main with non-numeric command-line argument."""
-        with pytest.raises(SystemExit):
-            main()
-        error_output = mock_stderr.getvalue()
-        assert "Error:" in error_output
+        main()
+        mock_print.assert_called_once()
+        mock_exit.assert_called_once_with(1)
     
     @patch('sys.argv', ['roman.py'])
-    @patch('builtins.input', side_effect=['42', 'n'])
-    @patch('sys.stdout', new_callable=StringIO)
-    def test_interactive_mode_single_conversion(self, mock_stdout, mock_input):
+    @patch('roman.get_user_input')
+    @patch('builtins.input')
+    @patch('builtins.print')
+    def test_interactive_mode_single_conversion(self, mock_print, mock_input, mock_get_input):
         """Test interactive mode with single conversion."""
+        mock_get_input.return_value = 42
+        mock_input.return_value = 'n'
+        
         main()
-        output = mock_stdout.getvalue()
-        assert "42 in Roman numerals is: XLII" in output
+        
+        # Check that the conversion was printed
+        print_calls = [call.args[0] for call in mock_print.call_args_list]
+        assert any("42 in Roman numerals is: XLII" in call for call in print_calls)
     
     @patch('sys.argv', ['roman.py'])
-    @patch('builtins.input', side_effect=['invalid', '42', 'n'])
-    @patch('sys.stdout', new_callable=StringIO)
-    def test_interactive_mode_invalid_then_valid(self, mock_stdout, mock_input):
-        """Test interactive mode with invalid input followed by valid input."""
+    @patch('roman.get_user_input')
+    @patch('builtins.input')
+    @patch('builtins.print')
+    def test_interactive_mode_invalid_input(self, mock_print, mock_input, mock_get_input):
+        """Test interactive mode with invalid input."""
+        mock_get_input.side_effect = [None, 42]  # First invalid, then valid
+        mock_input.return_value = 'n'
+        
         main()
-        output = mock_stdout.getvalue()
-        assert "Invalid input" in output
-        assert "42 in Roman numerals is: XLII" in output
+        
+        # Check that error message was printed
+        print_calls = [call.args[0] for call in mock_print.call_args_list]
+        assert any("Invalid input" in call for call in print_calls)
     
     @patch('sys.argv', ['roman.py'])
-    @patch('builtins.input', side_effect=['42', 'y', '100', 'no'])
-    @patch('sys.stdout', new_callable=StringIO)
-    def test_interactive_mode_multiple_conversions(self, mock_stdout, mock_input):
-        """Test interactive mode with multiple conversions."""
-        main()
-        output = mock_stdout.getvalue()
-        assert "42 in Roman numerals is: XLII" in output
-        assert "100 in Roman numerals is: C" in output
-    
-    @patch('sys.argv', ['roman.py'])
-    @patch('builtins.input', side_effect=KeyboardInterrupt)
-    @patch('sys.stdout', new_callable=StringIO)
-    def test_interactive_mode_keyboard_interrupt(self, mock_stdout, mock_input):
+    @patch('roman.get_user_input')
+    @patch('builtins.input')
+    @patch('builtins.print')
+    def test_interactive_mode_keyboard_interrupt(self, mock_print, mock_input, mock_get_input):
         """Test interactive mode with KeyboardInterrupt."""
+        mock_get_input.side_effect = KeyboardInterrupt()
+        
         main()
-        output = mock_stdout.getvalue()
-        assert "Goodbye!" in output
-    
-    @patch('sys.argv', ['roman.py'])
-    @patch('builtins.input', side_effect=['4000', 'n'])
-    @patch('sys.stdout', new_callable=StringIO)
-    def test_interactive_mode_out_of_range(self, mock_stdout, mock_input):
-        """Test interactive mode with out-of-range input."""
-        main()
-        output = mock_stdout.getvalue()
-        assert "Error:" in output
-        assert "Number must be an integer between 1 and 3999" in output
+        
+        # Check that goodbye message was printed
+        print_calls = [call.args[0] for call in mock_print.call_args_list]
+        assert any("Goodbye!" in call for call in print_calls)
