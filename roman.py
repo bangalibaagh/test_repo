@@ -63,6 +63,11 @@ def main() -> None:
     if len(sys.argv) == 2:
         try:
             num = int(sys.argv[1])
+        except ValueError:
+            print("Error: Number must be an integer between 1 and 3999", file=sys.stderr)
+            sys.exit(1)
+        
+        try:
             roman = decimal_to_roman(num)
             print(f"{num} = {roman}")
             return
