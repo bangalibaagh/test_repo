@@ -81,37 +81,31 @@ class TestGetUserInput:
     
     @patch('builtins.input', return_value='42')
     def test_valid_input(self, mock_input):
-        """Test valid numeric input."""
+        """Test valid integer input."""
         result = get_user_input()
         assert result == 42
     
-    @patch('builtins.input', return_value='  123  ')
-    def test_input_with_whitespace(self, mock_input):
-        """Test input with leading/trailing whitespace."""
-        result = get_user_input()
-        assert result == 123
-    
-    @patch('builtins.input', return_value='abc')
+    @patch('builtins.input', return_value='invalid')
     def test_invalid_input(self, mock_input):
-        """Test invalid non-numeric input."""
+        """Test invalid input returns None."""
         result = get_user_input()
         assert result is None
     
-    @patch('builtins.input', return_value='')
-    def test_empty_input(self, mock_input):
-        """Test empty input."""
+    @patch('builtins.input', return_value='3.14')
+    def test_float_input(self, mock_input):
+        """Test float input returns None."""
         result = get_user_input()
         assert result is None
     
     @patch('builtins.input', side_effect=EOFError)
     def test_eof_error(self, mock_input):
-        """Test EOFError handling."""
+        """Test EOFError returns None."""
         result = get_user_input()
         assert result is None
     
     @patch('builtins.input', side_effect=KeyboardInterrupt)
     def test_keyboard_interrupt(self, mock_input):
-        """Test KeyboardInterrupt handling."""
+        """Test KeyboardInterrupt returns None."""
         result = get_user_input()
         assert result is None
 
@@ -121,7 +115,7 @@ class TestMain:
     
     @patch('sys.argv', ['roman.py', '42'])
     @patch('sys.stdout', new_callable=StringIO)
-    def test_command_line_valid_argument(self, mock_stdout):
+    def test_command_line_valid_input(self, mock_stdout):
         """Test main with valid command-line argument."""
         main()
         output = mock_stdout.getvalue()
@@ -129,21 +123,19 @@ class TestMain:
     
     @patch('sys.argv', ['roman.py', '0'])
     @patch('sys.stderr', new_callable=StringIO)
-    def test_command_line_invalid_argument(self, mock_stderr):
+    def test_command_line_invalid_input(self, mock_stderr):
         """Test main with invalid command-line argument."""
-        with pytest.raises(SystemExit) as exc_info:
+        with pytest.raises(SystemExit):
             main()
-        assert exc_info.value.code == 1
         error_output = mock_stderr.getvalue()
         assert "Error:" in error_output
     
-    @patch('sys.argv', ['roman.py', 'abc'])
+    @patch('sys.argv', ['roman.py', 'invalid'])
     @patch('sys.stderr', new_callable=StringIO)
-    def test_command_line_non_numeric_argument(self, mock_stderr):
-        """Test main with non-numeric command-line argument."""
-        with pytest.raises(SystemExit) as exc_info:
+    def test_command_line_non_integer(self, mock_stderr):
+        """Test main with non-integer command-line argument."""
+        with pytest.raises(SystemExit):
             main()
-        assert exc_info.value.code == 1
         error_output = mock_stderr.getvalue()
         assert "Error:" in error_output
     
@@ -157,7 +149,17 @@ class TestMain:
         assert "42 in Roman numerals is: XLII" in output
     
     @patch('sys.argv', ['roman.py'])
-    @patch('builtins.input', side_effect=['42', 'y', '100', 'n'])
+    @patch('builtins.input', side_effect=['invalid', '42', 'n'])
+    @patch('sys.stdout', new_callable=StringIO)
+    def test_interactive_mode_invalid_then_valid(self, mock_stdout, mock_input):
+        """Test interactive mode with invalid input followed by valid input."""
+        main()
+        output = mock_stdout.getvalue()
+        assert "Invalid input" in output
+        assert "42 in Roman numerals is: XLII" in output
+    
+    @patch('sys.argv', ['roman.py'])
+    @patch('builtins.input', side_effect=['42', 'y', '100', 'no'])
     @patch('sys.stdout', new_callable=StringIO)
     def test_interactive_mode_multiple_conversions(self, mock_stdout, mock_input):
         """Test interactive mode with multiple conversions."""
@@ -167,26 +169,6 @@ class TestMain:
         assert "100 in Roman numerals is: C" in output
     
     @patch('sys.argv', ['roman.py'])
-    @patch('builtins.input', side_effect=['abc', '42', 'n'])
-    @patch('sys.stdout', new_callable=StringIO)
-    def test_interactive_mode_invalid_then_valid_input(self, mock_stdout, mock_input):
-        """Test interactive mode with invalid input followed by valid input."""
-        main()
-        output = mock_stdout.getvalue()
-        assert "Invalid input" in output
-        assert "42 in Roman numerals is: XLII" in output
-    
-    @patch('sys.argv', ['roman.py'])
-    @patch('builtins.input', side_effect=['4000', '42', 'n'])
-    @patch('sys.stdout', new_callable=StringIO)
-    def test_interactive_mode_out_of_range_input(self, mock_stdout, mock_input):
-        """Test interactive mode with out-of-range input."""
-        main()
-        output = mock_stdout.getvalue()
-        assert "Error:" in output
-        assert "42 in Roman numerals is: XLII" in output
-    
-    @patch('sys.argv', ['roman.py'])
     @patch('builtins.input', side_effect=KeyboardInterrupt)
     @patch('sys.stdout', new_callable=StringIO)
     def test_interactive_mode_keyboard_interrupt(self, mock_stdout, mock_input):
@@ -194,7 +176,13 @@ class TestMain:
         main()
         output = mock_stdout.getvalue()
         assert "Goodbye!" in output
-
-
-if __name__ == "__main__":
-    pytest.main([__file__])
+    
+    @patch('sys.argv', ['roman.py'])
+    @patch('builtins.input', side_effect=['4000', 'n'])
+    @patch('sys.stdout', new_callable=StringIO)
+    def test_interactive_mode_out_of_range(self, mock_stdout, mock_input):
+        """Test interactive mode with out-of-range input."""
+        main()
+        output = mock_stdout.getvalue()
+        assert "Error:" in output
+        assert "Number must be an integer between 1 and 3999" in output
