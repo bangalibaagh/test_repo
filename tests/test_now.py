@@ -44,6 +44,21 @@ class TestNowScript:
         time_diff = abs((current_time - timestamp).total_seconds())
         assert time_diff < 5, f"Timestamp is not recent enough: {time_diff} seconds difference"
     
+    def test_get_utc_timestamp_timezone_aware_parsing(self):
+        """Test that the returned timestamp can be parsed back to a timezone-aware datetime object."""
+        timestamp_str = now.get_utc_timestamp()
+        parsed_datetime = datetime.datetime.fromisoformat(timestamp_str)
+        
+        # Verify the parsed datetime is timezone-aware
+        assert parsed_datetime.tzinfo is not None, f"Parsed datetime from '{timestamp_str}' is not timezone-aware"
+        
+        # Verify it's in UTC timezone
+        assert parsed_datetime.tzinfo == datetime.timezone.utc, f"Parsed datetime timezone is not UTC: {parsed_datetime.tzinfo}"
+        
+        # Verify we can convert back to the same string representation
+        roundtrip_str = parsed_datetime.isoformat()
+        assert roundtrip_str == timestamp_str, f"Roundtrip conversion failed: '{timestamp_str}' -> '{roundtrip_str}'"
+    
     def test_script_execution(self):
         """Test that the script can be executed and produces valid output."""
         script_path = Path(__file__).parent.parent / "scripts" / "now.py"
