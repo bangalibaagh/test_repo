@@ -41,6 +41,25 @@ class TestNowScript:
         time_diff = abs((current_time - parsed_time).total_seconds())
         assert time_diff < 5, "Timestamp should be within 5 seconds of current time"
     
+    def test_timezone_aware_datetime_parsing(self):
+        """Test that timezone-aware datetime parsing works correctly across Python versions."""
+        timestamp = get_utc_timestamp()
+        
+        # Test that fromisoformat can parse the timezone-aware string
+        try:
+            parsed_time = datetime.datetime.fromisoformat(timestamp)
+        except ValueError as e:
+            pytest.fail(f"Failed to parse timezone-aware timestamp '{timestamp}': {e}")
+        
+        # Verify the parsed datetime has timezone info
+        assert parsed_time.tzinfo is not None, "Parsed datetime should have timezone information"
+        
+        # Verify it's UTC timezone
+        assert parsed_time.tzinfo == datetime.timezone.utc, "Parsed datetime should be in UTC timezone"
+        
+        # Verify the string representation matches expected format
+        assert timestamp.endswith('+00:00'), "Timestamp should end with UTC offset"
+    
     def test_script_execution(self, capsys):
         """Test that the main function prints a timestamp."""
         main()
