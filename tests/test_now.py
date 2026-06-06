@@ -27,6 +27,27 @@ class TestNowScript:
         
         assert re.match(iso_pattern, timestamp), f"Timestamp '{timestamp}' is not in valid ISO-8601 format"
     
+    def test_get_utc_timestamp_microsecond_precision(self):
+        """Test that get_utc_timestamp includes microseconds with expected precision."""
+        timestamp = now.get_utc_timestamp()
+        
+        # Extract the microsecond part from the timestamp
+        # Format: YYYY-MM-DDTHH:MM:SS.microseconds+00:00
+        microsecond_match = re.search(r'\.(\d+)\+00:00$', timestamp)
+        
+        assert microsecond_match is not None, f"Timestamp '{timestamp}' does not contain microseconds"
+        
+        microseconds_str = microsecond_match.group(1)
+        
+        # Verify microseconds are present (non-empty)
+        assert len(microseconds_str) > 0, f"Microseconds part is empty in timestamp '{timestamp}'"
+        
+        # Verify microseconds have expected precision (up to 6 digits for Python datetime)
+        assert len(microseconds_str) <= 6, f"Microseconds precision exceeds 6 digits in timestamp '{timestamp}'"
+        
+        # Verify all characters are digits
+        assert microseconds_str.isdigit(), f"Microseconds part contains non-digit characters in timestamp '{timestamp}'"
+    
     def test_get_utc_timestamp_is_utc(self):
         """Test that the timestamp is in UTC timezone."""
         timestamp = now.get_utc_timestamp()
