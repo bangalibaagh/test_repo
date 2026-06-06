@@ -46,6 +46,13 @@ class TestNowScript:
         parsed = datetime.datetime.fromisoformat(timestamp)
         assert parsed.tzinfo == datetime.timezone.utc, "Timestamp should be in UTC timezone"
     
+    def test_get_utc_timestamp_offset_format(self):
+        """Test that UTC timezone offset format is +00:00 (not Z)."""
+        timestamp = now.get_utc_timestamp()
+        
+        # Verify the timestamp ends with +00:00 specifically
+        assert timestamp.endswith('+00:00'), f"Timestamp '{timestamp}' should use +00:00 offset format, not Z"
+    
     def test_get_utc_timestamp_is_recent(self):
         """Test that the timestamp is recent (within last few seconds)."""
         before = datetime.datetime.now(datetime.timezone.utc)
