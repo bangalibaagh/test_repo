@@ -23,8 +23,8 @@ class TestNowScript:
         """Test that get_utc_timestamp returns a valid ISO-8601 format."""
         timestamp = get_utc_timestamp()
         
-        # ISO-8601 format regex pattern
-        iso_pattern = r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}\+00:00$'
+        # ISO-8601 format regex pattern - handles variable microsecond digits (0-6)
+        iso_pattern = r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,6})?\+00:00$'
         assert re.match(iso_pattern, timestamp), f"Timestamp '{timestamp}' is not in valid ISO-8601 format"
     
     def test_get_utc_timestamp_is_utc(self):
@@ -68,8 +68,8 @@ class TestNowScript:
         output = captured.out.strip()
         assert output, "Script should produce output"
         
-        # Verify it's a valid ISO-8601 timestamp
-        iso_pattern = r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}\+00:00$'
+        # Verify it's a valid ISO-8601 timestamp - handles variable microsecond digits (0-6)
+        iso_pattern = r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,6})?\+00:00$'
         assert re.match(iso_pattern, output), f"Output '{output}' is not in valid ISO-8601 format"
     
     def test_script_as_executable(self):
@@ -88,6 +88,6 @@ class TestNowScript:
         output = result.stdout.strip()
         assert output, "Script should produce output when executed"
         
-        # Verify it's a valid ISO-8601 timestamp
-        iso_pattern = r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}\+00:00$'
+        # Verify it's a valid ISO-8601 timestamp - handles variable microsecond digits (0-6)
+        iso_pattern = r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,6})?\+00:00$'
         assert re.match(iso_pattern, output), f"Output '{output}' is not in valid ISO-8601 format"
