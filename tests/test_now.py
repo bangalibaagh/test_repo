@@ -2,10 +2,12 @@
 """Tests for the now.py script."""
 
 import datetime
+import os
 import re
 import subprocess
 import sys
 from pathlib import Path
+from unittest import mock
 
 import pytest
 
@@ -46,6 +48,26 @@ class TestNowScript:
         
         # Should be within 5 seconds
         assert time_diff < 5, f"Timestamp seems too old or in future: {time_diff} seconds difference"
+    
+    def test_get_utc_timestamp_ignores_local_timezone(self):
+        """Test that the function always returns UTC regardless of local timezone settings."""
+        # Mock the TZ environment variable to simulate different system timezone
+        with mock.patch.dict(os.environ, {'TZ': 'America/New_York'}):
+            # Force timezone reload if available
+            if hasattr(time, 'tzset'):
+                import time
+                time.tzset()
+            
+            timestamp = now.get_utc_timestamp()
+            dt = datetime.datetime.fromisoformat(timestamp)
+            
+            # Verify it's still UTC despite local timezone being set to EST/EDT
+            assert dt.tzinfo == datetime.timezone.utc, "Function should return UTC regardless of local timezone"
+            
+            # Verify the timestamp is still recent (function works correctly)
+            current_time = datetime.datetime.now(datetime.timezone.utc)
+            time_diff = abs((current_time - dt).total_seconds())
+            assert time_diff < 5, "Function should still work correctly with different local timezone"
     
     def test_script_execution(self):
         """Test that the script can be executed and produces valid output."""
