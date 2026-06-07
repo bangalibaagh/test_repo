@@ -1,6 +1,10 @@
 #!/usr/bin/env python3
 """Tests for the wordcount module."""
 
+import sys
+import os
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+
 import pytest
 from scripts.wordcount import count_words
 
