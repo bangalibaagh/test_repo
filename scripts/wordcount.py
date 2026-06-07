@@ -40,9 +40,13 @@ def count_words(text: Union[str, None]) -> Dict[str, int]:
     if not text:
         return {}
     
-    # Remove punctuation and convert to lowercase
-    # Split on whitespace and non-word characters
-    words = re.findall(r'\b\w+\b', text.lower())
+    # Limit input length to prevent ReDoS attacks
+    if len(text) > 100000:
+        raise ValueError("Input text too long")
+    
+    # Handle contractions and hyphenated words properly
+    # Split on whitespace and punctuation but preserve apostrophes and hyphens within words
+    words = re.findall(r"\b[\w''-]+\b", text.lower())
     
     word_count = {}
     for word in words:
@@ -55,12 +59,11 @@ if __name__ == "__main__":
     import sys
     
     if len(sys.argv) > 1:
-        # Validate command line arguments to prevent injection
+        # Basic validation for command line arguments
         args = sys.argv[1:]
-        # Basic validation - ensure all arguments are strings and not excessively long
         for arg in args:
-            if not isinstance(arg, str) or len(arg) > 10000:
-                print("Error: Invalid command line argument")
+            if len(arg) > 10000:
+                print("Error: Command line argument too long")
                 sys.exit(1)
         text = " ".join(args)
     else:
@@ -75,6 +78,6 @@ if __name__ == "__main__":
                 print(f"{word}: {count}")
         else:
             print("No words found.")
-    except TypeError as e:
+    except (TypeError, ValueError) as e:
         print(f"Error: {e}")
         sys.exit(1)
