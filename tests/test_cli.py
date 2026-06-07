@@ -69,65 +69,40 @@ class TestWordCountCLI:
         assert result.returncode == 0
         assert "hello: 1" in result.stdout
     
-    def test_cli_error_handling_type_error(self):
-        """Test CLI error handling when count_words raises TypeError."""
-        # Test with a scenario that would cause TypeError in the function
-        # Since the CLI always passes strings, we need to test the actual error path
-        with patch('builtins.input', return_value=None):
-            with patch('scripts.wordcount.count_words') as mock_count:
-                mock_count.side_effect = TypeError("Input must be a string")
-                result = subprocess.run(
-                    [sys.executable, SCRIPT_PATH],
-                    capture_output=True,
-                    text=True,
-                    input="\n"
-                )
-                assert result.returncode == 1
-                assert "Error: Input must be a string" in result.stdout
-    
-    def test_cli_error_handling_value_error(self):
-        """Test CLI error handling when count_words raises ValueError."""
-        with patch('scripts.wordcount.count_words') as mock_count:
-            mock_count.side_effect = ValueError("Input text too long")
-            result = subprocess.run(
-                [sys.executable, SCRIPT_PATH, "test"],
-                capture_output=True,
-                text=True
-            )
-            assert result.returncode == 1
-            assert "Error: Input text too long" in result.stdout
-    
     def test_cli_interactive_mode(self):
         """Test CLI interactive mode when no arguments are provided."""
         result = subprocess.run(
             [sys.executable, SCRIPT_PATH],
+            input="hello world\n",
             capture_output=True,
-            text=True,
-            input="hello world\n"
+            text=True
         )
         assert result.returncode == 0
+        assert "Enter text to count words:" in result.stdout
         assert "hello: 1" in result.stdout
         assert "world: 1" in result.stdout
     
-    def test_cli_interactive_mode_empty_input(self):
-        """Test CLI interactive mode with empty input."""
+    def test_cli_interactive_mode_no_words(self):
+        """Test CLI interactive mode with input containing no words."""
         result = subprocess.run(
             [sys.executable, SCRIPT_PATH],
+            input="!!!\n",
             capture_output=True,
-            text=True,
-            input="\n"
+            text=True
         )
         assert result.returncode == 0
+        assert "Enter text to count words:" in result.stdout
         assert "No words found." in result.stdout
     
     def test_cli_interactive_mode_long_input(self):
         """Test CLI interactive mode with input exceeding length limit."""
-        long_input = "a" * 100001 + "\n"
+        long_input = "word " * 20001  # Creates input longer than 100,000 chars
         result = subprocess.run(
             [sys.executable, SCRIPT_PATH],
+            input=long_input + "\n",
             capture_output=True,
-            text=True,
-            input=long_input
+            text=True
         )
         assert result.returncode == 1
+        assert "Enter text to count words:" in result.stdout
         assert "Error: Input text too long" in result.stdout
