@@ -6,10 +6,10 @@ counting and proper punctuation handling.
 """
 
 import re
-from typing import Dict
+from typing import Dict, Union
 
 
-def count_words(text: str) -> Dict[str, int]:
+def count_words(text: Union[str, None]) -> Dict[str, int]:
     """Count words in the given text.
     
     Args:
@@ -17,6 +17,9 @@ def count_words(text: str) -> Dict[str, int]:
         
     Returns:
         A dictionary mapping each word (lowercase) to its count.
+        
+    Raises:
+        TypeError: If text is None or not a string.
         
     Examples:
         >>> count_words("Hello world")
@@ -28,6 +31,12 @@ def count_words(text: str) -> Dict[str, int]:
         >>> count_words("")
         {}
     """
+    if text is None:
+        raise TypeError("Input text cannot be None")
+    
+    if not isinstance(text, str):
+        raise TypeError("Input must be a string")
+    
     if not text:
         return {}
     
@@ -46,15 +55,26 @@ if __name__ == "__main__":
     import sys
     
     if len(sys.argv) > 1:
-        text = " ".join(sys.argv[1:])
+        # Validate command line arguments to prevent injection
+        args = sys.argv[1:]
+        # Basic validation - ensure all arguments are strings and not excessively long
+        for arg in args:
+            if not isinstance(arg, str) or len(arg) > 10000:
+                print("Error: Invalid command line argument")
+                sys.exit(1)
+        text = " ".join(args)
     else:
         text = input("Enter text to count words: ")
     
-    result = count_words(text)
-    
-    if result:
-        print("Word counts:")
-        for word, count in sorted(result.items()):
-            print(f"{word}: {count}")
-    else:
-        print("No words found.")
+    try:
+        result = count_words(text)
+        
+        if result:
+            print("Word counts:")
+            for word, count in sorted(result.items()):
+                print(f"{word}: {count}")
+        else:
+            print("No words found.")
+    except TypeError as e:
+        print(f"Error: {e}")
+        sys.exit(1)

@@ -3,7 +3,8 @@
 
 import sys
 import os
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+# Use relative import path for security - avoid user-controlled path manipulation
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 import pytest
 from scripts.wordcount import count_words
@@ -86,7 +87,42 @@ class TestCountWords:
         assert result == {}
     
     def test_contractions(self):
-        """Test handling of contractions."""
+        """Test handling of contractions.
+        
+        Note: Current implementation splits contractions like "don't" into "don" and "t".
+        This may not be ideal behavior - contractions might be better treated as single words.
+        """
         result = count_words("don't can't won't")
         expected = {"don": 1, "t": 3, "can": 1, "won": 1}
         assert result == expected
+    
+    def test_none_input(self):
+        """Test that None input is handled properly."""
+        with pytest.raises(TypeError):
+            count_words(None)
+    
+    def test_unicode_characters(self):
+        """Test handling of Unicode and non-ASCII characters."""
+        result = count_words("café naïve résumé")
+        expected = {"café": 1, "naïve": 1, "résumé": 1}
+        assert result == expected
+        
+        # Test with mixed ASCII and Unicode
+        result = count_words("hello café world naïve")
+        expected = {"hello": 1, "café": 1, "world": 1, "naïve": 1}
+        assert result == expected
+    
+    def test_very_long_string(self):
+        """Test performance and behavior with very long input strings."""
+        # Create a long string with repeated words
+        long_text = " ".join(["word"] * 10000)
+        result = count_words(long_text)
+        expected = {"word": 10000}
+        assert result == expected
+        
+        # Test with many unique words
+        unique_words = [f"word{i}" for i in range(1000)]
+        long_unique_text = " ".join(unique_words)
+        result = count_words(long_unique_text)
+        assert len(result) == 1000
+        assert all(count == 1 for count in result.values())
