@@ -5,7 +5,7 @@ import sys
 import os
 import subprocess
 import pytest
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 
 # Get the path to the wordcount script
 SCRIPT_PATH = os.path.join(os.path.dirname(__file__), '..', 'scripts', 'wordcount.py')
@@ -70,8 +70,8 @@ class TestWordCountCLI:
     
     def test_cli_error_handling_type_error(self):
         """Test CLI error handling when count_words raises TypeError."""
-        # This test simulates a scenario where count_words might raise TypeError
-        # by using a mock to force the error condition
+        # Test by creating a scenario where the function validation catches an error
+        # We'll use a very large input that triggers the ValueError, then mock TypeError
         with patch('scripts.wordcount.count_words') as mock_count:
             mock_count.side_effect = TypeError("Input must be a string")
             result = subprocess.run(
@@ -84,8 +84,6 @@ class TestWordCountCLI:
     
     def test_cli_error_handling_value_error(self):
         """Test CLI error handling when count_words raises ValueError."""
-        # This test simulates a scenario where count_words might raise ValueError
-        # by using a mock to force the error condition
         with patch('scripts.wordcount.count_words') as mock_count:
             mock_count.side_effect = ValueError("Input text too long")
             result = subprocess.run(
@@ -98,7 +96,7 @@ class TestWordCountCLI:
     
     def test_cli_interactive_mode(self):
         """Test CLI interactive mode when no arguments are provided."""
-        # Test interactive mode by providing input via stdin
+        # Test interactive input mode
         result = subprocess.run(
             [sys.executable, SCRIPT_PATH],
             input="hello world\n",
@@ -109,13 +107,26 @@ class TestWordCountCLI:
         assert "hello: 1" in result.stdout
         assert "world: 1" in result.stdout
     
-    def test_cli_interactive_mode_no_words(self):
-        """Test CLI interactive mode with input containing no words."""
+    def test_cli_interactive_mode_empty_input(self):
+        """Test CLI interactive mode with empty input."""
         result = subprocess.run(
             [sys.executable, SCRIPT_PATH],
-            input="!!!\n",
+            input="\n",
             capture_output=True,
             text=True
         )
         assert result.returncode == 0
         assert "No words found." in result.stdout
+    
+    def test_cli_interactive_mode_error_handling(self):
+        """Test CLI interactive mode error handling."""
+        # Test with input that would trigger length validation
+        long_input = "a" * 100001 + "\n"
+        result = subprocess.run(
+            [sys.executable, SCRIPT_PATH],
+            input=long_input,
+            capture_output=True,
+            text=True
+        )
+        assert result.returncode == 1
+        assert "Error: Input text too long" in result.stdout

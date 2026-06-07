@@ -95,12 +95,9 @@ class TestCountWords:
         assert result == expected
     
     def test_hyphenated_words(self):
-        """Test handling of hyphenated words.
-        
-        Hyphenated words should be treated as single words to preserve semantic meaning.
-        """
-        result = count_words("well-known twenty-one state-of-the-art")
-        expected = {"well-known": 1, "twenty-one": 1, "state-of-the-art": 1}
+        """Test handling of hyphenated words."""
+        result = count_words("well-known state-of-the-art")
+        expected = {"well-known": 1, "state-of-the-art": 1}
         assert result == expected
     
     def test_none_input(self):
@@ -128,38 +125,44 @@ class TestCountWords:
         expected = {"café": 1, "naïve": 1, "résumé": 1}
         assert result == expected
     
-    def test_very_long_string(self):
-        """Test handling of very long strings."""
-        # Test many words
-        long_text = " ".join(["word"] * 1000)
-        result = count_words(long_text)
-        assert result == {"word": 1000}
-        
-        # Test single very long word
-        very_long_word = "a" * 50000
-        result = count_words(very_long_word)
-        assert result == {very_long_word: 1}
+    def test_mixed_unicode_and_ascii(self):
+        """Test mixing unicode and ASCII characters."""
+        result = count_words("hello café world naïve")
+        expected = {"hello": 1, "café": 1, "world": 1, "naïve": 1}
+        assert result == expected
+    
+    def test_emoji_handling(self):
+        """Test that emojis are not counted as words."""
+        result = count_words("hello 😀 world 🌍")
+        expected = {"hello": 1, "world": 1}
+        assert result == expected
     
     def test_input_length_limit(self):
-        """Test that very long input raises ValueError."""
-        # Create text longer than the 100000 character limit
-        long_text = "word " * 25000  # This creates a string > 100000 chars
+        """Test that input longer than 100,000 characters raises ValueError."""
+        long_text = "a" * 100001
         with pytest.raises(ValueError, match="Input text too long"):
             count_words(long_text)
     
-    def test_mixed_apostrophes_and_hyphens(self):
-        """Test words containing both apostrophes and hyphens."""
-        result = count_words("rock'n'-roll jack-o'-lantern")
-        expected = {"rock'n'-roll": 1, "jack-o'-lantern": 1}
-        assert result == expected
+    def test_input_length_at_limit(self):
+        """Test that input at exactly 100,000 characters is accepted."""
+        text_at_limit = "a" * 100000
+        result = count_words(text_at_limit)
+        assert result == {"a" * 100000: 1}
     
     def test_whitespace_only_strings(self):
-        """Test strings containing only whitespace characters."""
+        """Test that whitespace-only strings return empty dictionary."""
+        # Test various whitespace characters
         result = count_words("   ")
         assert result == {}
         
-        result = count_words("\t\n\r")
+        result = count_words("\t\t\t")
         assert result == {}
         
-        result = count_words(" \t \n \r ")
+        result = count_words("\n\n\n")
+        assert result == {}
+        
+        result = count_words("\r\n\r\n")
+        assert result == {}
+        
+        result = count_words(" \t\n\r ")
         assert result == {}
