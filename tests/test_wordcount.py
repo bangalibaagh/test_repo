@@ -146,3 +146,20 @@ class TestCountWords:
         long_text = "word " * 25000  # This creates a string > 100000 chars
         with pytest.raises(ValueError, match="Input text too long"):
             count_words(long_text)
+    
+    def test_mixed_apostrophes_and_hyphens(self):
+        """Test words containing both apostrophes and hyphens."""
+        result = count_words("rock'n'-roll jack-o'-lantern")
+        expected = {"rock'n'-roll": 1, "jack-o'-lantern": 1}
+        assert result == expected
+    
+    def test_whitespace_only_strings(self):
+        """Test strings containing only whitespace characters."""
+        result = count_words("   ")
+        assert result == {}
+        
+        result = count_words("\t\n\r")
+        assert result == {}
+        
+        result = count_words(" \t \n \r ")
+        assert result == {}

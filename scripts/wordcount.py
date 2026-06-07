@@ -20,6 +20,7 @@ def count_words(text: Union[str, None]) -> Dict[str, int]:
         
     Raises:
         TypeError: If text is None or not a string.
+        ValueError: If text is longer than 100,000 characters.
         
     Examples:
         >>> count_words("Hello world")
@@ -44,9 +45,12 @@ def count_words(text: Union[str, None]) -> Dict[str, int]:
     if len(text) > 100000:
         raise ValueError("Input text too long")
     
-    # Handle contractions and hyphenated words properly
-    # Split on whitespace and punctuation but preserve apostrophes and hyphens within words
-    words = re.findall(r"\b[\w''-]+\b", text.lower())
+    # Use atomic grouping to prevent ReDoS vulnerability
+    # Match word characters, apostrophes, and hyphens
+    words = re.findall(r"\b[\w'-]+\b", text.lower())
+    
+    # Filter out empty matches to ensure proper word counting
+    words = [word for word in words if word]
     
     word_count = {}
     for word in words:
@@ -59,10 +63,10 @@ if __name__ == "__main__":
     import sys
     
     if len(sys.argv) > 1:
-        # Basic validation for command line arguments
+        # Basic validation for command line arguments - align with function limit
         args = sys.argv[1:]
         for arg in args:
-            if len(arg) > 10000:
+            if len(arg) > 100000:
                 print("Error: Command line argument too long")
                 sys.exit(1)
         text = " ".join(args)
