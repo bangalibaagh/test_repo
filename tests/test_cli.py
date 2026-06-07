@@ -6,6 +6,7 @@ import os
 import subprocess
 import pytest
 from unittest.mock import patch, MagicMock
+from io import StringIO
 
 # Get the path to the wordcount script
 SCRIPT_PATH = os.path.join(os.path.dirname(__file__), '..', 'scripts', 'wordcount.py')
@@ -70,8 +71,7 @@ class TestWordCountCLI:
     
     def test_cli_error_handling_type_error(self):
         """Test CLI error handling when count_words raises TypeError."""
-        # Test by creating a scenario where the function validation catches an error
-        # We'll use a very large input that triggers the ValueError, then mock TypeError
+        # Mock count_words to raise TypeError
         with patch('scripts.wordcount.count_words') as mock_count:
             mock_count.side_effect = TypeError("Input must be a string")
             result = subprocess.run(
@@ -84,6 +84,7 @@ class TestWordCountCLI:
     
     def test_cli_error_handling_value_error(self):
         """Test CLI error handling when count_words raises ValueError."""
+        # Mock count_words to raise ValueError
         with patch('scripts.wordcount.count_words') as mock_count:
             mock_count.side_effect = ValueError("Input text too long")
             result = subprocess.run(
@@ -96,7 +97,7 @@ class TestWordCountCLI:
     
     def test_cli_interactive_mode(self):
         """Test CLI interactive mode when no arguments are provided."""
-        # Test interactive input mode
+        # Test interactive mode with valid input
         result = subprocess.run(
             [sys.executable, SCRIPT_PATH],
             input="hello world\n",
@@ -120,7 +121,7 @@ class TestWordCountCLI:
     
     def test_cli_interactive_mode_error_handling(self):
         """Test CLI interactive mode error handling."""
-        # Test with input that would trigger length validation
+        # Test with input that exceeds length limit
         long_input = "a" * 100001 + "\n"
         result = subprocess.run(
             [sys.executable, SCRIPT_PATH],
