@@ -28,8 +28,8 @@ def count_words(text: str) -> Dict[str, int]:
     if not text:
         return {}
     
-    # Convert to lowercase and extract words (alphanumeric characters only)
-    words = re.findall(r'\b[a-zA-Z0-9]+\b', text.lower())
+    # Convert to lowercase and extract words (unicode word characters)
+    words = re.findall(r'\b\w+\b', text.lower())
     
     # Count word frequencies
     word_count = {}
