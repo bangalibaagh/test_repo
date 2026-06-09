@@ -78,6 +78,13 @@ class TestGetNumberInput:
         with patch('builtins.input', return_value='-1'):
             result = get_number_input("Enter number: ")
             assert result == -1.0
+    
+    def test_max_attempts_exceeded(self):
+        """Test that function raises ValueError after max attempts are exceeded."""
+        with patch('builtins.input', side_effect=['abc', 'def', 'ghi']):
+            with patch('builtins.print'):
+                with pytest.raises(ValueError, match="Failed to get valid input after 3 attempts"):
+                    get_number_input("Enter number: ")
 
 
 class TestMainFunction:

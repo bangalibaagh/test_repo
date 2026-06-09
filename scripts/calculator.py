@@ -5,30 +5,38 @@ import sys
 from typing import Union
 
 
-def get_number_input(prompt: str) -> float:
+def get_number_input(prompt: str, max_attempts: int = 3) -> float:
     """Get a number input from the user with validation.
     
     Args:
         prompt: The prompt message to display to the user
+        max_attempts: Maximum number of attempts before raising an exception
         
     Returns:
         The validated number as a float
         
     Raises:
-        ValueError: If the input is not a valid number
+        ValueError: If the input is not a valid number after max_attempts
     """
-    while True:
+    attempts = 0
+    while attempts < max_attempts:
         try:
             user_input = input(prompt).strip()
             if not user_input:
                 raise ValueError("Input cannot be empty")
             return float(user_input)
         except ValueError as e:
+            attempts += 1
             if "could not convert" in str(e):
                 print("Error: Please enter a valid number.")
             else:
                 print(f"Error: {e}")
-            continue
+            
+            if attempts >= max_attempts:
+                raise ValueError(f"Failed to get valid input after {max_attempts} attempts")
+    
+    # This should never be reached due to the raise above, but included for completeness
+    raise ValueError(f"Failed to get valid input after {max_attempts} attempts")
 
 
 def add_numbers(num1: Union[int, float], num2: Union[int, float]) -> Union[int, float]:
