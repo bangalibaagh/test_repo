@@ -28,12 +28,15 @@ def count_words(text: str) -> Dict[str, int]:
     if not text:
         return {}
     
-    # Convert to lowercase and extract words (unicode word characters)
+    # Convert to lowercase and extract words (letters, digits, but filter out standalone underscores)
     words = re.findall(r'\b\w+\b', text.lower())
+    
+    # Filter out words that are only underscores or other non-alphanumeric characters
+    filtered_words = [word for word in words if re.search(r'[a-zA-Z0-9]', word)]
     
     # Count word frequencies
     word_count = {}
-    for word in words:
+    for word in filtered_words:
         word_count[word] = word_count.get(word, 0) + 1
     
     return word_count
