@@ -123,7 +123,7 @@ class TestDecimalToRoman:
             decimal_to_roman(10000)
     
     def test_boundary_inputs_cli(self):
-        """Test CLI with boundary inputs."""
+        """Test CLI with boundary inputs using subprocess integration."""
         # Test valid boundary cases
         result = subprocess.run([sys.executable, "scripts/roman.py", "1"], 
                               capture_output=True, text=True)
@@ -147,7 +147,7 @@ class TestDecimalToRoman:
         assert "Error:" in result.stderr
     
     def test_cli_valid_numbers(self):
-        """Test CLI with valid numbers."""
+        """Test CLI with valid numbers using subprocess integration."""
         test_cases = [
             ("42", "XLII"),
             ("1994", "MCMXCIV"),
@@ -163,18 +163,33 @@ class TestDecimalToRoman:
             assert result.stdout.strip() == expected
     
     def test_cli_invalid_arguments(self):
-        """Test CLI with invalid arguments."""
-        # Test non-numeric input
+        """Test CLI with invalid arguments using subprocess integration."""
+        # Test non-numeric input (argparse error)
         result = subprocess.run([sys.executable, "scripts/roman.py", "abc"], 
                               capture_output=True, text=True)
-        assert result.returncode != 0
+        assert result.returncode == 1
         
-        # Test no arguments
+        # Test no arguments (argparse error)
         result = subprocess.run([sys.executable, "scripts/roman.py"], 
                               capture_output=True, text=True)
-        assert result.returncode != 0
+        assert result.returncode == 1
         
-        # Test negative number
+        # Test too many arguments (argparse error)
+        result = subprocess.run([sys.executable, "scripts/roman.py", "42", "extra"], 
+                              capture_output=True, text=True)
+        assert result.returncode == 1
+        
+        # Test float input (argparse error)
+        result = subprocess.run([sys.executable, "scripts/roman.py", "42.5"], 
+                              capture_output=True, text=True)
+        assert result.returncode == 1
+        
+        # Test help flag (argparse SystemExit with code 0, but we convert to 1)
+        result = subprocess.run([sys.executable, "scripts/roman.py", "--help"], 
+                              capture_output=True, text=True)
+        assert result.returncode == 1
+        
+        # Test negative number (ValueError, not argparse error)
         result = subprocess.run([sys.executable, "scripts/roman.py", "-5"], 
                               capture_output=True, text=True)
         assert result.returncode == 1
