@@ -35,7 +35,7 @@ def count_words(text: str) -> Dict[str, int]:
     
     # Convert to lowercase and extract words using regex
     # This matches only sequences of alphabetic characters
-    words = re.findall(r'\b[a-zA-Z]+\b', text.lower())
+    words = re.findall(r'[a-zA-Z]+', text.lower())
     
     # Count word frequencies
     word_count = {}
