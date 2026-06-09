@@ -57,9 +57,6 @@ def main() -> None:
         args = parser.parse_args()
         roman_numeral = decimal_to_roman(args.number)
         print(roman_numeral)
-    except SystemExit as e:
-        # Handle argparse SystemExit with proper error code
-        sys.exit(1)
     except ValueError as e:
         print(f"Error: {e}", file=sys.stderr)
         sys.exit(1)

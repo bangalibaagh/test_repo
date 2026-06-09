@@ -167,27 +167,32 @@ class TestDecimalToRoman:
         # Test non-numeric input (argparse error)
         result = subprocess.run([sys.executable, "scripts/roman.py", "abc"], 
                               capture_output=True, text=True)
-        assert result.returncode == 1
+        assert result.returncode == 2  # argparse exits with code 2 for errors
+        assert "invalid int value" in result.stderr
         
         # Test no arguments (argparse error)
         result = subprocess.run([sys.executable, "scripts/roman.py"], 
                               capture_output=True, text=True)
-        assert result.returncode == 1
+        assert result.returncode == 2  # argparse exits with code 2 for errors
+        assert "required" in result.stderr
         
         # Test too many arguments (argparse error)
         result = subprocess.run([sys.executable, "scripts/roman.py", "42", "extra"], 
                               capture_output=True, text=True)
-        assert result.returncode == 1
+        assert result.returncode == 2  # argparse exits with code 2 for errors
+        assert "unrecognized arguments" in result.stderr
         
         # Test float input (argparse error)
         result = subprocess.run([sys.executable, "scripts/roman.py", "42.5"], 
                               capture_output=True, text=True)
-        assert result.returncode == 1
+        assert result.returncode == 2  # argparse exits with code 2 for errors
+        assert "invalid int value" in result.stderr
         
-        # Test help flag (argparse SystemExit with code 0, but we convert to 1)
+        # Test help flag (argparse SystemExit with code 0)
         result = subprocess.run([sys.executable, "scripts/roman.py", "--help"], 
                               capture_output=True, text=True)
-        assert result.returncode == 1
+        assert result.returncode == 0  # help exits with code 0
+        assert "usage:" in result.stdout
         
         # Test negative number (ValueError, not argparse error)
         result = subprocess.run([sys.executable, "scripts/roman.py", "-5"], 
@@ -208,3 +213,39 @@ class TestDecimalToRoman:
                     main()
                 assert exc_info.value.code == 1
                 assert "Error:" in mock_stderr.getvalue()
+    
+    def test_main_function_argparse_errors(self):
+        """Test main function with argparse errors."""
+        # Test missing argument
+        with patch('sys.argv', ['roman.py']):
+            with patch('sys.stderr', new_callable=StringIO) as mock_stderr:
+                with pytest.raises(SystemExit) as exc_info:
+                    main()
+                assert exc_info.value.code == 2  # argparse error code
+                assert "required" in mock_stderr.getvalue()
+        
+        # Test invalid argument type
+        with patch('sys.argv', ['roman.py', 'abc']):
+            with patch('sys.stderr', new_callable=StringIO) as mock_stderr:
+                with pytest.raises(SystemExit) as exc_info:
+                    main()
+                assert exc_info.value.code == 2  # argparse error code
+                assert "invalid int value" in mock_stderr.getvalue()
+        
+        # Test help flag
+        with patch('sys.argv', ['roman.py', '--help']):
+            with patch('sys.stdout', new_callable=StringIO) as mock_stdout:
+                with pytest.raises(SystemExit) as exc_info:
+                    main()
+                assert exc_info.value.code == 0  # help exits with code 0
+                assert "usage:" in mock_stdout.getvalue()
+    
+    def test_main_function_generic_exception(self):
+        """Test main function generic exception handler."""
+        with patch('sys.argv', ['roman.py', '42']):
+            with patch('scripts.roman.decimal_to_roman', side_effect=RuntimeError("Test error")):
+                with patch('sys.stderr', new_callable=StringIO) as mock_stderr:
+                    with pytest.raises(SystemExit) as exc_info:
+                        main()
+                    assert exc_info.value.code == 1
+                    assert "Unexpected error: Test error" in mock_stderr.getvalue()
