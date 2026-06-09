@@ -44,7 +44,7 @@ def decimal_to_roman(num: int) -> str:
     
     for value, numeral in roman_numerals:
         count = num // value
-        if count:
+        if count > 0:
             result += numeral * count
             num -= value * count
     
