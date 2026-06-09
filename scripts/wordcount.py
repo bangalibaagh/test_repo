@@ -18,6 +18,7 @@ def count_words(text: str) -> Dict[str, int]:
     Returns:
         A dictionary mapping each word to its frequency count.
         Words are converted to lowercase and punctuation is removed.
+        Only alphabetic characters are considered part of words.
         
     Examples:
         >>> count_words("Hello world")
@@ -33,7 +34,7 @@ def count_words(text: str) -> Dict[str, int]:
         return {}
     
     # Convert to lowercase and extract words using regex
-    # This removes punctuation and splits on whitespace
+    # This matches only sequences of alphabetic characters
     words = re.findall(r'\b[a-zA-Z]+\b', text.lower())
     
     # Count word frequencies
