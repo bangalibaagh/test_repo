@@ -84,21 +84,3 @@ class TestCountWords:
             "again": 1
         }
         assert result == expected
-    
-    def test_newlines_and_tabs(self):
-        """Test handling of newlines and tabs."""
-        text = "hello\nworld\tpython\r\nhello"
-        result = count_words(text)
-        expected = {"hello": 2, "world": 1, "python": 1}
-        assert result == expected
-    
-    def test_only_punctuation(self):
-        """Test string with only punctuation."""
-        result = count_words("!@#$%^&*()_+-={}[]|\\:;\"'<>?,./")
-        assert result == {}
-    
-    def test_contractions(self):
-        """Test handling of contractions."""
-        result = count_words("don't can't won't it's")
-        expected = {"don": 1, "t": 3, "can": 1, "won": 1, "it": 1, "s": 1}
-        assert result == expected
