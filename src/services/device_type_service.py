@@ -96,7 +96,7 @@ def update(db: Session, device_type_id: int, data: DeviceTypeUpdate) -> DeviceTy
 
 
 def delete(db: Session, device_type_id: int) -> None:
-    """Delete a device type by its ID.
+    """Delete a device type by its primary key.
 
     Args:
         db: SQLAlchemy database session.

@@ -1,8 +1,12 @@
 """Tests for the health check endpoint."""
 
+import os
+
 from starlette.testclient import TestClient
 
 from src.main import app
+
+_TEST_API_KEY = os.environ.get("API_KEY", "test-api-key-for-pytest")
 
 
 def test_health_returns_200(client):

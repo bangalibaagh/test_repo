@@ -1,34 +1,31 @@
 """Shared test fixtures."""
 
+import os
+
 import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from starlette.testclient import TestClient
 
-from src.main import app
-from src.config.database import Base, get_db
-
-# Use a fixed non-empty API key for tests so the startup validator passes.
+# Set API_KEY env var before importing app so settings loads a valid key.
 TEST_API_KEY = "test-api-key-for-pytest"
+os.environ.setdefault("API_KEY", TEST_API_KEY)
 
+from src.main import app  # noqa: E402
+from src.config.database import Base, get_db  # noqa: E402
+from src.config.settings import settings  # noqa: E402
 
-@pytest.fixture(autouse=True)
-def _patch_api_key(monkeypatch):
-    """Override the API_KEY setting for every test."""
-    import src.config.settings as _settings_mod
-    monkeypatch.setattr(_settings_mod.settings, "API_KEY", TEST_API_KEY)
-    import src.main as _main_mod
-    monkeypatch.setattr(_main_mod.settings, "API_KEY", TEST_API_KEY)
+# Ensure the in-process settings object carries the test key.
+settings.API_KEY = TEST_API_KEY
 
 
 @pytest.fixture()
-def client(_patch_api_key):
+def client():
     """Provide a test client with a fresh in-memory database for each test.
 
     Yields:
         A configured TestClient instance with API key authentication.
     """
-    # Per-test in-memory SQLite engine for full isolation.
     test_engine = create_engine(
         "sqlite:///:memory:",
         connect_args={"check_same_thread": False},
