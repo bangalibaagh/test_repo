@@ -7,6 +7,7 @@ from sqlalchemy.pool import StaticPool
 from starlette.testclient import TestClient
 
 from src.config.database import Base, get_db
+import src.models.device_type  # noqa: F401
 from src.main import app
 
 _test_engine = create_engine(
