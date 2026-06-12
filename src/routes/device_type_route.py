@@ -103,4 +103,4 @@ def delete_device_type_endpoint(device_type_id: int, db: Session = Depends(get_d
     deleted = delete_device_type(db, device_type_id)
     if not deleted:
         raise HTTPException(status_code=404, detail="Device type not found")
-    return Response()
+    return Response(status_code=204)
