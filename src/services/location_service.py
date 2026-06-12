@@ -102,15 +102,12 @@ def update_location(db: Session, location_id: int, payload: LocationUpdate) -> L
     return location
 
 
-def delete_location(db: Session, location_id: int) -> Location:
-    """Delete an existing location by primary key.
+def delete_location(db: Session, location_id: int) -> None:
+    """Delete an existing location.
 
     Args:
         db: Active SQLAlchemy database session.
         location_id: Primary key of the location to delete.
-
-    Returns:
-        The deleted Location ORM instance.
 
     Raises:
         HTTPException: 404 if no location with the given id exists.
@@ -122,4 +119,3 @@ def delete_location(db: Session, location_id: int) -> Location:
         "location_deleted",
         extra={"event": "location_deleted", "id": location_id},
     )
-    return location
