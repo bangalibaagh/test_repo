@@ -2,7 +2,7 @@
 
 from typing import List
 
-from fastapi import APIRouter, Depends, Response
+from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from src.config.database import get_db
@@ -71,7 +71,7 @@ def update_device_type(
 
 
 @router.delete("/{device_type_id}", status_code=204)
-def delete_device_type(device_type_id: int, db: Session = Depends(get_db)) -> Response:
+def delete_device_type(device_type_id: int, db: Session = Depends(get_db)) -> None:
     """Delete a device type by ID.
 
     Args:
@@ -82,4 +82,3 @@ def delete_device_type(device_type_id: int, db: Session = Depends(get_db)) -> Re
         An empty response with HTTP 204 status.
     """
     device_type_service.delete(db, device_type_id)
-    return Response(status_code=204)

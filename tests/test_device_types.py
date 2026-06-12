@@ -85,7 +85,7 @@ def test_update_device_type_returns_200_with_changed_fields(client):
 
 
 def test_delete_device_type_returns_204(client):
-    """Test that deleting a device type returns 204.
+    """Test that deleting a device type returns 204 with no body.
 
     Args:
         client: The shared test HTTP client fixture.
@@ -94,6 +94,7 @@ def test_delete_device_type_returns_204(client):
     device_type_id = create_response.json()["id"]
     response = client.delete(f"/device-types/{device_type_id}")
     assert response.status_code == 204
+    assert response.content == b""
 
 
 def test_delete_missing_device_type_returns_404(client):
