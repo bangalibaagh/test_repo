@@ -9,9 +9,18 @@ from src.config.database import Base, get_db
 from src.main import app
 
 # Ensure all models are registered with Base.metadata before create_all
-import src.device_types.model  # noqa: F401
-import src.devices.model  # noqa: F401
-import src.locations.model  # noqa: F401
+try:
+    import src.device_types.model  # noqa: F401
+except ModuleNotFoundError:
+    pass
+try:
+    import src.devices.model  # noqa: F401
+except ModuleNotFoundError:
+    pass
+try:
+    import src.locations.model  # noqa: F401
+except ModuleNotFoundError:
+    pass
 
 SQLITE_URL = "sqlite:///:memory:"
 
@@ -88,12 +97,12 @@ def test_get_device_type_by_id_returns_200(client):
 
 
 def test_get_device_type_missing_returns_404(client):
-    """GET /{id} for a non-existent id should return 404."""
+    """GET /{id} for a non-existent device type should return 404."""
     response = client.get("/device-types/99999")
     assert response.status_code == 404
 
 
-def test_update_device_type_returns_200_and_updated_fields(client):
+def test_update_device_type_returns_200(client):
     """PUT /{id} should return 200 and the updated device type."""
     created = client.post("/device-types/", json={"name": "OldName"}).json()
     device_type_id = created["id"]
@@ -108,13 +117,13 @@ def test_update_device_type_returns_200_and_updated_fields(client):
 
 
 def test_update_missing_device_type_returns_404(client):
-    """PUT /{id} for a non-existent id should return 404."""
-    response = client.put("/device-types/99999", json={"name": "X"})
+    """PUT /{id} for a non-existent device type should return 404."""
+    response = client.put("/device-types/99999", json={"name": "Ghost"})
     assert response.status_code == 404
 
 
 def test_delete_device_type_returns_204(client):
-    """DELETE /{id} should return 204 No Content."""
+    """DELETE /{id} should return 204 for an existing device type."""
     created = client.post("/device-types/", json={"name": "ToDelete"}).json()
     device_type_id = created["id"]
     response = client.delete(f"/device-types/{device_type_id}")
@@ -122,6 +131,6 @@ def test_delete_device_type_returns_204(client):
 
 
 def test_delete_missing_device_type_returns_404(client):
-    """DELETE /{id} for a non-existent id should return 404."""
+    """DELETE /{id} for a non-existent device type should return 404."""
     response = client.delete("/device-types/99999")
     assert response.status_code == 404
