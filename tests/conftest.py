@@ -33,6 +33,7 @@ def client():
         A ``TestClient`` instance configured against the FastAPI application.
     """
     # resource model imports go here
+    from src.models.device_type import DeviceType  # noqa: F401
 
     Base.metadata.create_all(bind=engine)
 
