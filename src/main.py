@@ -21,7 +21,7 @@ class _JsonFormatter(logging.Formatter):
     the keys ``timestamp``, ``level``, ``message``, and ``logger``.
     """
 
-    def format(self, record: logging.LogRecord) -> str:  # noqa: D102
+    def format(self, record: logging.LogRecord) -> str:
         """Format a log record as a JSON string.
 
         Args:
@@ -60,7 +60,7 @@ app = FastAPI(title=settings.APP_NAME)
 
 
 @app.on_event("startup")
-async def _startup_event() -> None:  # noqa: D401
+async def _startup_event() -> None:
     """FastAPI startup handler that initialises JSON structured logging."""
     _configure_logging()
     logging.getLogger(__name__).info("Application startup complete.")
