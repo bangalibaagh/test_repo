@@ -102,7 +102,7 @@ def update(db: Session, location_id: int, data: LocationUpdate) -> Location:
 
 
 def delete(db: Session, location_id: int) -> None:
-    """Delete a location record.
+    """Delete a location record by its primary key.
 
     Args:
         db: The database session.
