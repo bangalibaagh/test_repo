@@ -34,6 +34,7 @@ def client():
     """
     # resource model imports go here
     from src.models.device_type import DeviceType  # noqa: F401
+    from src.models.location import Location  # noqa: F401
 
     Base.metadata.create_all(bind=engine)
 
