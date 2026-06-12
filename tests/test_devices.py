@@ -158,3 +158,33 @@ def test_create_device_invalid_location_returns_404(client):
     dt_id = _create_device_type(client)
     resp = client.post("/devices", json={"serial_number": "SN-008", "name": "Dev8", "device_type_id": dt_id, "location_id": 9999})
     assert resp.status_code == 404
+
+
+def test_get_nonexistent_device_returns_404(client):
+    """Test that getting a device with a non-existent ID returns 404.
+
+    Args:
+        client: The shared test client fixture.
+    """
+    resp = client.get("/devices/999999")
+    assert resp.status_code == 404
+
+
+def test_update_nonexistent_device_returns_404(client):
+    """Test that updating a device with a non-existent ID returns 404.
+
+    Args:
+        client: The shared test client fixture.
+    """
+    resp = client.put("/devices/999999", json={"name": "Ghost"})
+    assert resp.status_code == 404
+
+
+def test_delete_nonexistent_device_returns_404(client):
+    """Test that deleting a device with a non-existent ID returns 404.
+
+    Args:
+        client: The shared test client fixture.
+    """
+    resp = client.delete("/devices/999999")
+    assert resp.status_code == 404

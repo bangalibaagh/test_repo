@@ -69,11 +69,11 @@ def create(db: Session, data: LocationCreate) -> Location:
     db.add(location)
     try:
         db.commit()
+        db.refresh(location)
     except IntegrityError:
         db.rollback()
         logger.warning({"message": "Duplicate location name", "name": data.name})
         raise HTTPException(status_code=409, detail="Location name already exists")
-    db.refresh(location)
     return location
 
 

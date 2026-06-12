@@ -1,9 +1,18 @@
 """Pydantic schemas for the Device resource."""
 
 from datetime import datetime
+from enum import Enum
 from typing import Optional
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
+
+
+class DeviceStatus(str, Enum):
+    """Allowed values for device status."""
+
+    active = "active"
+    inactive = "inactive"
+    maintenance = "maintenance"
 
 
 class DeviceCreate(BaseModel):
@@ -17,11 +26,11 @@ class DeviceCreate(BaseModel):
         status: Current status of the device.
     """
 
-    serial_number: str
-    name: str
+    serial_number: str = Field(..., max_length=100)
+    name: str = Field(..., max_length=150)
     device_type_id: int
     location_id: Optional[int] = None
-    status: str = 'active'
+    status: DeviceStatus = DeviceStatus.active
 
 
 class DeviceUpdate(BaseModel):
@@ -35,11 +44,11 @@ class DeviceUpdate(BaseModel):
         status: Optional new status.
     """
 
-    serial_number: Optional[str] = None
-    name: Optional[str] = None
+    serial_number: Optional[str] = Field(None, max_length=100)
+    name: Optional[str] = Field(None, max_length=150)
     device_type_id: Optional[int] = None
     location_id: Optional[int] = None
-    status: Optional[str] = None
+    status: Optional[DeviceStatus] = None
 
 
 class DeviceOut(BaseModel):
