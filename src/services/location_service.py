@@ -21,7 +21,7 @@ def get_all(db: Session) -> list[Location]:
     Returns:
         A list of all Location records.
     """
-    logger.info({"message": "Fetching all locations"})
+    logger.info("Fetching all locations")
     return db.query(Location).all()
 
 
@@ -38,10 +38,10 @@ def get_by_id(db: Session, location_id: int) -> Location:
     Raises:
         HTTPException: 404 if no location with the given id exists.
     """
-    logger.info({"message": "Fetching location", "location_id": location_id})
+    logger.info("Fetching location id=%s", location_id)
     location = db.query(Location).filter(Location.id == location_id).first()
     if location is None:
-        logger.warning({"message": "Location not found", "location_id": location_id})
+        logger.warning("Location id=%s not found", location_id)
         raise HTTPException(status_code=404, detail="Location not found")
     return location
 
@@ -59,7 +59,7 @@ def create(db: Session, data: LocationCreate) -> Location:
     Raises:
         HTTPException: 409 if a location with the same name already exists.
     """
-    logger.info({"message": "Creating location", "name": data.name})
+    logger.info("Creating location name=%s", data.name)
     location = Location(
         name=data.name,
         address=data.address,
@@ -72,7 +72,7 @@ def create(db: Session, data: LocationCreate) -> Location:
         db.refresh(location)
     except IntegrityError:
         db.rollback()
-        logger.warning({"message": "Duplicate location name", "name": data.name})
+        logger.warning("Duplicate location name=%s", data.name)
         raise HTTPException(status_code=409, detail="Location name already exists")
     return location
 
@@ -91,7 +91,7 @@ def update(db: Session, location_id: int, data: LocationUpdate) -> Location:
     Raises:
         HTTPException: 404 if no location with the given id exists.
     """
-    logger.info({"message": "Updating location", "location_id": location_id})
+    logger.info("Updating location id=%s", location_id)
     location = get_by_id(db, location_id)
     update_data = data.model_dump(exclude_unset=True)
     for field, value in update_data.items():
@@ -111,7 +111,7 @@ def delete(db: Session, location_id: int) -> None:
     Raises:
         HTTPException: 404 if no location with the given id exists.
     """
-    logger.info({"message": "Deleting location", "location_id": location_id})
+    logger.info("Deleting location id=%s", location_id)
     location = get_by_id(db, location_id)
     db.delete(location)
     db.commit()

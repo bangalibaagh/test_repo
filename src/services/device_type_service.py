@@ -21,7 +21,7 @@ def get_all(db: Session) -> List[DeviceType]:
     Returns:
         A list of all DeviceType records.
     """
-    logger.info({"message": "Fetching all device types"})
+    logger.info("Fetching all device types")
     return db.query(DeviceType).all()
 
 
@@ -38,10 +38,10 @@ def get_by_id(db: Session, device_type_id: int) -> DeviceType:
     Raises:
         HTTPException: 404 if no device type with the given ID exists.
     """
-    logger.info({"message": "Fetching device type", "device_type_id": device_type_id})
+    logger.info("Fetching device type id=%s", device_type_id)
     record = db.query(DeviceType).filter(DeviceType.id == device_type_id).first()
     if record is None:
-        logger.warning({"message": "Device type not found", "device_type_id": device_type_id})
+        logger.warning("Device type id=%s not found", device_type_id)
         raise HTTPException(status_code=404, detail="Device type not found")
     return record
 
@@ -59,10 +59,10 @@ def create(db: Session, data: DeviceTypeCreate) -> DeviceType:
     Raises:
         HTTPException: 409 if a device type with the same name already exists.
     """
-    logger.info({"message": "Creating device type", "name": data.name})
+    logger.info("Creating device type name=%s", data.name)
     existing = db.query(DeviceType).filter(DeviceType.name == data.name).first()
     if existing is not None:
-        logger.warning({"message": "Duplicate device type name", "name": data.name})
+        logger.warning("Duplicate device type name=%s", data.name)
         raise HTTPException(status_code=409, detail="Device type with this name already exists")
     record = DeviceType(name=data.name, description=data.description)
     db.add(record)
@@ -85,12 +85,11 @@ def update(db: Session, device_type_id: int, data: DeviceTypeUpdate) -> DeviceTy
     Raises:
         HTTPException: 404 if no device type with the given ID exists.
     """
-    logger.info({"message": "Updating device type", "device_type_id": device_type_id})
+    logger.info("Updating device type id=%s", device_type_id)
     record = get_by_id(db, device_type_id)
-    if data.name is not None:
-        record.name = data.name
-    if data.description is not None:
-        record.description = data.description
+    update_data = data.model_dump(exclude_unset=True)
+    for field, value in update_data.items():
+        setattr(record, field, value)
     db.commit()
     db.refresh(record)
     return record
@@ -106,7 +105,7 @@ def delete(db: Session, device_type_id: int) -> None:
     Raises:
         HTTPException: 404 if no device type with the given ID exists.
     """
-    logger.info({"message": "Deleting device type", "device_type_id": device_type_id})
+    logger.info("Deleting device type id=%s", device_type_id)
     record = get_by_id(db, device_type_id)
     db.delete(record)
     db.commit()
