@@ -8,7 +8,7 @@ from sqlalchemy.orm import sessionmaker
 from src.config.database import Base, get_db
 from src.main import app
 
-SQLITE_URL = "sqlite:///./test_device_types.db"
+SQLITE_URL = "sqlite:///:memory:"
 
 engine = create_engine(
     SQLITE_URL, connect_args={"check_same_thread": False}
@@ -29,10 +29,12 @@ def client():
             db.close()
 
     app.dependency_overrides[get_db] = override_get_db
-    with TestClient(app) as c:
-        yield c
-    app.dependency_overrides.clear()
-    Base.metadata.drop_all(bind=engine)
+    try:
+        with TestClient(app) as c:
+            yield c
+    finally:
+        app.dependency_overrides.clear()
+        Base.metadata.drop_all(bind=engine)
 
 
 def test_create_device_type_returns_201_and_body(client):

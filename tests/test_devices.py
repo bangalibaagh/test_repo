@@ -2,9 +2,16 @@
 
 import pytest
 from fastapi.testclient import TestClient
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
 
 from src.main import app
-from src.config.database import Base, engine
+from src.config.database import Base, get_db
+
+SQLITE_URL = "sqlite:///:memory:"
+
+_engine = create_engine(SQLITE_URL, connect_args={"check_same_thread": False})
+_TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=_engine)
 
 
 @pytest.fixture(autouse=True)
@@ -14,9 +21,21 @@ def setup_database():
     Yields:
         None
     """
-    Base.metadata.create_all(bind=engine)
-    yield
-    Base.metadata.drop_all(bind=engine)
+    Base.metadata.create_all(bind=_engine)
+
+    def override_get_db():
+        db = _TestingSessionLocal()
+        try:
+            yield db
+        finally:
+            db.close()
+
+    app.dependency_overrides[get_db] = override_get_db
+    try:
+        yield
+    finally:
+        app.dependency_overrides.clear()
+        Base.metadata.drop_all(bind=_engine)
 
 
 @pytest.fixture()
