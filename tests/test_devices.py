@@ -131,10 +131,11 @@ def test_create_duplicate_serial_number_returns_409(client):
         client: The shared test client fixture.
     """
     dt_id = _create_device_type(client)
-    payload = {"serial_number": "SN-DUP", "name": "Dev Dup", "device_type_id": dt_id}
+    payload = {"serial_number": "SN-DUP", "name": "DevDup1", "device_type_id": dt_id}
     resp1 = client.post("/devices", json=payload)
     assert resp1.status_code == 201
-    resp2 = client.post("/devices", json={"serial_number": "SN-DUP", "name": "Dev Dup 2", "device_type_id": dt_id})
+    payload2 = {"serial_number": "SN-DUP", "name": "DevDup2", "device_type_id": dt_id}
+    resp2 = client.post("/devices", json=payload2)
     assert resp2.status_code == 409
 
 
@@ -144,7 +145,7 @@ def test_create_device_invalid_device_type_returns_404(client):
     Args:
         client: The shared test client fixture.
     """
-    payload = {"serial_number": "SN-NODT", "name": "No DT Device", "device_type_id": 99999}
+    payload = {"serial_number": "SN-NODT", "name": "DevNoType", "device_type_id": 99999}
     resp = client.post("/devices", json=payload)
     assert resp.status_code == 404
 
@@ -158,7 +159,7 @@ def test_create_device_invalid_location_returns_404(client):
     dt_id = _create_device_type(client)
     payload = {
         "serial_number": "SN-NOLOC",
-        "name": "No Loc Device",
+        "name": "DevNoLoc",
         "device_type_id": dt_id,
         "location_id": 99999,
     }
@@ -166,8 +167,8 @@ def test_create_device_invalid_location_returns_404(client):
     assert resp.status_code == 404
 
 
-def test_get_missing_device_returns_404(client):
-    """Test that getting a non-existent device returns 404.
+def test_get_device_with_nonexistent_id_returns_404(client):
+    """Test that getting a device with a non-existent ID returns 404.
 
     Args:
         client: The shared test client fixture.
@@ -176,8 +177,8 @@ def test_get_missing_device_returns_404(client):
     assert resp.status_code == 404
 
 
-def test_update_missing_device_returns_404(client):
-    """Test that updating a non-existent device returns 404.
+def test_update_device_with_nonexistent_id_returns_404(client):
+    """Test that updating a device with a non-existent ID returns 404.
 
     Args:
         client: The shared test client fixture.
@@ -186,8 +187,8 @@ def test_update_missing_device_returns_404(client):
     assert resp.status_code == 404
 
 
-def test_delete_missing_device_returns_404(client):
-    """Test that deleting a non-existent device returns 404.
+def test_delete_device_with_nonexistent_id_returns_404(client):
+    """Test that deleting a device with a non-existent ID returns 404.
 
     Args:
         client: The shared test client fixture.
