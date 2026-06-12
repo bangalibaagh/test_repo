@@ -7,6 +7,7 @@ from sqlalchemy.orm import sessionmaker
 
 from src.config.database import Base, get_db
 from src.main import app
+from src.models.device_type import DeviceType  # noqa: F401 — ensures table is registered
 
 # resource model imports will be added by later components
 
