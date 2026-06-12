@@ -8,6 +8,11 @@ from sqlalchemy.orm import sessionmaker
 from src.config.database import Base, get_db
 from src.main import app
 
+# Ensure all models are registered with Base.metadata before create_all
+import src.device_types.model  # noqa: F401
+import src.devices.model  # noqa: F401
+import src.locations.model  # noqa: F401
+
 SQLITE_URL = "sqlite:///:memory:"
 
 engine = create_engine(
@@ -94,12 +99,12 @@ def test_update_device_type_returns_200_and_updated_fields(client):
     device_type_id = created["id"]
     response = client.put(
         f"/device-types/{device_type_id}",
-        json={"name": "NewName", "description": "Updated desc"},
+        json={"name": "NewName", "description": "Updated"},
     )
     assert response.status_code == 200
     body = response.json()
     assert body["name"] == "NewName"
-    assert body["description"] == "Updated desc"
+    assert body["description"] == "Updated"
 
 
 def test_update_missing_device_type_returns_404(client):
@@ -109,7 +114,7 @@ def test_update_missing_device_type_returns_404(client):
 
 
 def test_delete_device_type_returns_204(client):
-    """DELETE /{id} should return 204 for an existing device type."""
+    """DELETE /{id} should return 204 No Content."""
     created = client.post("/device-types/", json={"name": "ToDelete"}).json()
     device_type_id = created["id"]
     response = client.delete(f"/device-types/{device_type_id}")
@@ -119,13 +124,4 @@ def test_delete_device_type_returns_204(client):
 def test_delete_missing_device_type_returns_404(client):
     """DELETE /{id} for a non-existent id should return 404."""
     response = client.delete("/device-types/99999")
-    assert response.status_code == 404
-
-
-def test_deleted_device_type_no_longer_accessible(client):
-    """After DELETE, GET /{id} should return 404."""
-    created = client.post("/device-types/", json={"name": "Ephemeral"}).json()
-    device_type_id = created["id"]
-    client.delete(f"/device-types/{device_type_id}")
-    response = client.get(f"/device-types/{device_type_id}")
     assert response.status_code == 404

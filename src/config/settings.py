@@ -15,7 +15,7 @@ class Settings(BaseSettings):
     """
 
     APP_NAME: str = "Device Registry"
-    DATABASE_URL: str = os.environ.get("DATABASE_URL", "sqlite:///./app.db")
+    DATABASE_URL: str = os.environ.get("DATABASE_URL", "sqlite:///:memory:")
     LOG_LEVEL: str = "INFO"
 
 
