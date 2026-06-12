@@ -22,6 +22,7 @@ def client():
         TestClient: A FastAPI test client configured with the in-memory database.
     """
     from src.models.device_type import DeviceType  # noqa: F401
+    from src.models.location import Location  # noqa: F401
 
     engine = create_engine(
         "sqlite://",
