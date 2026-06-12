@@ -1,6 +1,6 @@
 """Database configuration and session management."""
 
-from sqlalchemy import create_engine
+import sqlalchemy
 from sqlalchemy.orm import sessionmaker, declarative_base
 
 from src.config.settings import settings
@@ -11,7 +11,7 @@ _connect_args = (
     else {}
 )
 
-engine = create_engine(
+engine = sqlalchemy.create_engine(
     settings.DATABASE_URL,
     connect_args=_connect_args,
 )
