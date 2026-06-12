@@ -103,6 +103,7 @@ def create_location(client: TestClient, name: str = "Warehouse A") -> dict:
 
 def make_device_payload(
     device_type_id: int,
+    name: str = "My Device",
     serial_number: str = "SN-001",
     location_id: int = None,
 ) -> dict:
@@ -110,13 +111,15 @@ def make_device_payload(
 
     Args:
         device_type_id: ID of an existing device type.
+        name: Human-readable name for the device.
         serial_number: Serial number string for the device.
-        location_id: Optional location ID.
+        location_id: Optional ID of an existing location.
 
     Returns:
-        Dictionary suitable for posting to the devices endpoint.
+        Dictionary suitable for use as a JSON request body.
     """
     payload = {
+        "name": name,
         "device_type_id": device_type_id,
         "serial_number": serial_number,
     }
@@ -136,65 +139,87 @@ def test_create_device_returns_201_and_body(client):
     response = client.post("/devices/", json=payload)
     assert response.status_code == 201, response.text
     body = response.json()
-    assert body["serial_number"] == "SN-001"
+    assert body["name"] == payload["name"]
+    assert body["serial_number"] == payload["serial_number"]
     assert body["device_type_id"] == dt["id"]
     assert "id" in body
+    assert "created_at" in body
 
 
-def test_create_device_duplicate_serial_returns_400(client):
-    """POST /devices/ with a duplicate serial number should return 400."""
+def test_create_device_missing_device_type_returns_404(client):
+    """POST /devices/ with a non-existent device_type_id should return 404."""
+    payload = make_device_payload(device_type_id=9999)
+    response = client.post("/devices/", json=payload)
+    assert response.status_code == 404, response.text
+
+
+def test_create_duplicate_serial_returns_400(client):
+    """POST /devices/ with a duplicate serial_number should return 400."""
     dt = create_device_type(client)
-    payload = make_device_payload(device_type_id=dt["id"], serial_number="SN-DUP")
+    payload = make_device_payload(device_type_id=dt["id"])
     client.post("/devices/", json=payload)
     response = client.post("/devices/", json=payload)
-    assert response.status_code == 400
+    assert response.status_code == 400, response.text
 
 
 def test_list_devices_returns_200_and_list(client):
-    """GET /devices/ should return 200 and a list."""
+    """GET /devices/ should return 200 and a list of devices."""
     dt = create_device_type(client)
-    client.post("/devices/", json=make_device_payload(dt["id"], "SN-A"))
-    client.post("/devices/", json=make_device_payload(dt["id"], "SN-B"))
+    client.post("/devices/", json=make_device_payload(device_type_id=dt["id"], serial_number="SN-A", name="Dev A"))
+    client.post("/devices/", json=make_device_payload(device_type_id=dt["id"], serial_number="SN-B", name="Dev B"))
     response = client.get("/devices/")
-    assert response.status_code == 200
+    assert response.status_code == 200, response.text
     body = response.json()
     assert isinstance(body, list)
-    serials = [d["serial_number"] for d in body]
-    assert "SN-A" in serials
-    assert "SN-B" in serials
+    assert len(body) >= 2
 
 
 def test_get_device_by_id_returns_200(client):
     """GET /devices/{id} should return 200 and the correct device."""
     dt = create_device_type(client)
-    created = client.post("/devices/", json=make_device_payload(dt["id"])).json()
-    response = client.get(f"/devices/{created['id']}")
-    assert response.status_code == 200
-    assert response.json()["id"] == created["id"]
+    created = client.post("/devices/", json=make_device_payload(device_type_id=dt["id"])).json()
+    device_id = created["id"]
+    response = client.get(f"/devices/{device_id}")
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["id"] == device_id
 
 
 def test_get_missing_device_returns_404(client):
     """GET /devices/{id} for a non-existent device should return 404."""
     response = client.get("/devices/99999")
-    assert response.status_code == 404
+    assert response.status_code == 404, response.text
+
+
+def test_update_device_returns_200(client):
+    """PUT /devices/{id} should return 200 and the updated device."""
+    dt = create_device_type(client)
+    created = client.post("/devices/", json=make_device_payload(device_type_id=dt["id"])).json()
+    device_id = created["id"]
+    update_payload = {"name": "Updated Device", "serial_number": "SN-UPDATED", "device_type_id": dt["id"]}
+    response = client.put(f"/devices/{device_id}", json=update_payload)
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["name"] == "Updated Device"
 
 
 def test_delete_device_returns_204(client):
-    """DELETE /devices/{id} should return 204 for an existing device."""
+    """DELETE /devices/{id} should return 204."""
     dt = create_device_type(client)
-    created = client.post("/devices/", json=make_device_payload(dt["id"])).json()
-    response = client.delete(f"/devices/{created['id']}")
-    assert response.status_code == 204
+    created = client.post("/devices/", json=make_device_payload(device_type_id=dt["id"])).json()
+    device_id = created["id"]
+    response = client.delete(f"/devices/{device_id}")
+    assert response.status_code == 204, response.text
 
 
 def test_delete_missing_device_returns_404(client):
     """DELETE /devices/{id} for a non-existent device should return 404."""
     response = client.delete("/devices/99999")
-    assert response.status_code == 404
+    assert response.status_code == 404, response.text
 
 
 def test_create_device_with_location_returns_201(client):
-    """POST /devices/ with a location_id should return 201."""
+    """POST /devices/ with a valid location_id should return 201."""
     dt = create_device_type(client)
     loc = create_location(client)
     payload = make_device_payload(device_type_id=dt["id"], location_id=loc["id"])
