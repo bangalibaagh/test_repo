@@ -1,0 +1,20 @@
+"""FastAPI application entry point."""
+
+from fastapi import FastAPI
+
+from src.config.settings import settings
+from src.config.logging_config import configure_logging
+
+configure_logging(settings.LOG_LEVEL)
+
+app = FastAPI(title=settings.APP_NAME)
+
+
+@app.get("/health", response_model=dict, status_code=200)
+def health_check() -> dict:
+    """Health check endpoint.
+
+    Returns:
+        A dictionary with a status key indicating the service is healthy.
+    """
+    return {"status": "ok"}
