@@ -31,7 +31,10 @@ def create_location(db: Session, payload: LocationCreate) -> Location:
     db.add(location)
     db.commit()
     db.refresh(location)
-    logger.info({"event": "location_created", "id": location.id, "name": location.name})
+    logger.info(
+        "location_created",
+        extra={"event": "location_created", "id": location.id, "name": location.name},
+    )
     return location
 
 
@@ -50,7 +53,10 @@ def get_location(db: Session, location_id: int) -> Location:
     """
     location = db.query(Location).filter(Location.id == location_id).first()
     if location is None:
-        logger.warning({"event": "location_not_found", "id": location_id})
+        logger.warning(
+            "location_not_found",
+            extra={"event": "location_not_found", "id": location_id},
+        )
         raise HTTPException(status_code=404, detail="Location not found")
     return location
 
@@ -89,7 +95,10 @@ def update_location(db: Session, location_id: int, payload: LocationUpdate) -> L
         setattr(location, field, value)
     db.commit()
     db.refresh(location)
-    logger.info({"event": "location_updated", "id": location.id})
+    logger.info(
+        "location_updated",
+        extra={"event": "location_updated", "id": location.id},
+    )
     return location
 
 
@@ -106,4 +115,7 @@ def delete_location(db: Session, location_id: int) -> None:
     location = get_location(db, location_id)
     db.delete(location)
     db.commit()
-    logger.info({"event": "location_deleted", "id": location_id})
+    logger.info(
+        "location_deleted",
+        extra={"event": "location_deleted", "id": location_id},
+    )
