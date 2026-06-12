@@ -71,7 +71,9 @@ def get_device(device_id: int, db: Session = Depends(get_db)) -> DeviceOut:
 
 
 @router.put("/{device_id}", response_model=DeviceOut, status_code=200)
-def update_device(device_id: int, data: DeviceUpdate, db: Session = Depends(get_db)) -> DeviceOut:
+def update_device(
+    device_id: int, data: DeviceUpdate, db: Session = Depends(get_db)
+) -> DeviceOut:
     """Update an existing device.
 
     Args:
@@ -102,6 +104,9 @@ def delete_device(device_id: int, db: Session = Depends(get_db)) -> None:
     Args:
         device_id: Primary key of the device to delete.
         db: Database session injected by FastAPI.
+
+    Returns:
+        None (HTTP 204 No Content).
 
     Raises:
         HTTPException: 404 if the device does not exist.

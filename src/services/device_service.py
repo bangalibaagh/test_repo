@@ -35,7 +35,11 @@ def get_by_id(db: Session, device_id: int) -> Optional[Device]:
     return db.query(Device).filter(Device.id == device_id).first()
 
 
-def _validate_foreign_keys(db: Session, device_type_id: Optional[int], location_id: Optional[int]) -> None:
+def _validate_foreign_keys(
+    db: Session,
+    device_type_id: Optional[int],
+    location_id: Optional[int],
+) -> None:
     """Validate that referenced foreign keys exist.
 
     Args:
