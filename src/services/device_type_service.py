@@ -92,7 +92,7 @@ def delete_device_type(db: Session, device_type_id: int) -> bool:
         device_type_id: Primary key of the device type to delete.
 
     Returns:
-        True if the device type was deleted, False if it was not found.
+        True if the device type was deleted, False if not found.
     """
     device_type = db.query(DeviceType).filter(DeviceType.id == device_type_id).first()
     if device_type is None:
