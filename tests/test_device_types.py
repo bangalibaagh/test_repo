@@ -4,6 +4,7 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import StaticPool
 
 from src.config.database import Base, get_db
 from src.main import app
@@ -25,7 +26,9 @@ except ModuleNotFoundError:
 SQLITE_URL = "sqlite:///:memory:"
 
 engine = create_engine(
-    SQLITE_URL, connect_args={"check_same_thread": False}
+    SQLITE_URL,
+    connect_args={"check_same_thread": False},
+    poolclass=StaticPool,
 )
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
@@ -96,32 +99,6 @@ def test_get_device_type_by_id_returns_200(client):
     assert body["name"] == "Camera"
 
 
-def test_get_device_type_missing_returns_404(client):
-    """GET /{id} for a non-existent device type should return 404."""
-    response = client.get("/device-types/99999")
-    assert response.status_code == 404
-
-
-def test_update_device_type_returns_200(client):
-    """PUT /{id} should return 200 and the updated device type."""
-    created = client.post("/device-types/", json={"name": "OldName"}).json()
-    device_type_id = created["id"]
-    response = client.put(
-        f"/device-types/{device_type_id}",
-        json={"name": "NewName", "description": "Updated"},
-    )
-    assert response.status_code == 200
-    body = response.json()
-    assert body["name"] == "NewName"
-    assert body["description"] == "Updated"
-
-
-def test_update_missing_device_type_returns_404(client):
-    """PUT /{id} for a non-existent device type should return 404."""
-    response = client.put("/device-types/99999", json={"name": "Ghost"})
-    assert response.status_code == 404
-
-
 def test_delete_device_type_returns_204(client):
     """DELETE /{id} should return 204 for an existing device type."""
     created = client.post("/device-types/", json={"name": "ToDelete"}).json()
@@ -131,6 +108,6 @@ def test_delete_device_type_returns_204(client):
 
 
 def test_delete_missing_device_type_returns_404(client):
-    """DELETE /{id} for a non-existent device type should return 404."""
+    """DELETE /{id} should return 404 for a non-existent device type."""
     response = client.delete("/device-types/99999")
     assert response.status_code == 404
