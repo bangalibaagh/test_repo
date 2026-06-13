@@ -30,14 +30,21 @@ Base.metadata.create_all(bind=engine)
 def db_session():
     """Yield a database session bound to the in-memory test engine.
 
+    Each test runs inside a transaction that is rolled back on teardown,
+    ensuring full isolation between tests.
+
     Yields:
         Session: A SQLAlchemy session for the in-memory SQLite database.
     """
-    session = TestingSessionLocal()
+    connection = engine.connect()
+    transaction = connection.begin()
+    session = TestingSessionLocal(bind=connection)
     try:
         yield session
     finally:
         session.close()
+        transaction.rollback()
+        connection.close()
 
 
 @pytest.fixture(scope="function")
