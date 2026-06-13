@@ -16,6 +16,7 @@ from src.config.database import Base, get_db
 
 # Resource models must be imported here so Base.metadata registers their tables
 # (imports added by each resource component)
+from src.models.device_type import DeviceType  # noqa: F401
 
 engine = create_engine(
     "sqlite:///:memory:",

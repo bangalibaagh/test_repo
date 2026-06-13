@@ -22,3 +22,8 @@ def health_check() -> dict:
         A dictionary with a single ``status`` key set to ``'ok'``.
     """
     return {"status": "ok"}
+
+
+from src.routes.device_type_route import router as device_type_router  # noqa: E402
+
+app.include_router(device_type_router)
