@@ -4,10 +4,14 @@ This module defines the application configuration using pydantic-settings,
 allowing settings to be overridden via environment variables or a .env file.
 """
 
+import logging
+
 from pydantic import field_validator
 from pydantic_settings import BaseSettings
 
 _ALLOWED_DB_SCHEMES = {"sqlite", "postgresql", "postgresql+asyncpg", "postgresql+psycopg2", "mysql", "mysql+pymysql", "mysql+mysqlconnector"}
+
+_VALID_LOG_LEVELS = {"DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"}
 
 
 class Settings(BaseSettings):
@@ -44,6 +48,28 @@ class Settings(BaseSettings):
                 f"Allowed schemes: {sorted(_ALLOWED_DB_SCHEMES)}"
             )
         return v
+
+    @field_validator("LOG_LEVEL")
+    @classmethod
+    def validate_log_level(cls, v: str) -> str:
+        """Ensure LOG_LEVEL is a recognised logging level name.
+
+        Args:
+            v: The raw LOG_LEVEL string.
+
+        Returns:
+            The validated LOG_LEVEL string (uppercased).
+
+        Raises:
+            ValueError: If the value is not a standard logging level.
+        """
+        upper = v.upper()
+        if upper not in _VALID_LOG_LEVELS:
+            raise ValueError(
+                f"LOG_LEVEL '{v}' is not valid. "
+                f"Allowed values: {sorted(_VALID_LOG_LEVELS)}"
+            )
+        return upper
 
     class Config:
         """Pydantic config for Settings."""

@@ -89,15 +89,11 @@ def delete_location(
     location_id: int,
     db: Session = Depends(get_db),
     _: str = Depends(require_api_key),
-) -> Response:
+) -> None:
     """Delete a location by id.
 
     Args:
         location_id: The primary key of the location to delete.
         db: The database session provided by dependency injection.
-
-    Returns:
-        An empty response with HTTP 204 status.
     """
     location_service.delete(db, location_id)
-    return Response(status_code=204)
