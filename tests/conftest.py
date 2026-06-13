@@ -48,6 +48,7 @@ def client() -> Generator[TestClient, None, None]:
     # Base.metadata before create_all is called.  Expand this list as
     # new models are added to the project.
     from src.models.device_type import DeviceType  # noqa: F401
+    from src.models.location import Location  # noqa: F401
 
     Base.metadata.create_all(bind=engine)
 
