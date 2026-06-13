@@ -1,10 +1,5 @@
 """Shared test fixtures for the Device Registry test suite."""
 
-# Resource model imports — add here as resources are built
-from src.models.device_type import DeviceType  # noqa: F401
-from src.models.location import Location  # noqa: F401
-from src.models.device import Device  # noqa: F401
-
 import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -13,6 +8,11 @@ from fastapi.testclient import TestClient
 
 from src.config.database import Base, get_db
 from src.main import app
+
+# Resource model imports — add here as resources are built
+from src.models.device_type import DeviceType  # noqa: F401
+from src.models.location import Location  # noqa: F401
+from src.models.device import Device  # noqa: F401
 
 TEST_DATABASE_URL = "sqlite:///:memory:"
 

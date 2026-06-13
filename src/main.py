@@ -57,7 +57,7 @@ app.include_router(device_router)
 logger.info("Device Registry application starting up")
 
 
-@app.get("/health", response_model=dict, status_code=200)
+@app.get("/health", response_model=None, status_code=200)
 def health_check() -> dict:
     """Return the health status of the application.
 
