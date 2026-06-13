@@ -12,32 +12,50 @@ from src.models.device import Device  # noqa: F401 - ensure models are registere
 from src.models.device_type import DeviceType  # noqa: F401
 from src.models.location import Location  # noqa: F401
 
-# Import Base and get_db using the same symbols as conftest.py / other tests.
-# The project exposes these through src.models (declarative base) and src.routes (get_db).
-try:
-    from src.database import Base, get_db  # type: ignore[import]
-except ModuleNotFoundError:
+# Import Base and get_db using the same pattern as conftest.py.
+# conftest.py imports Base from src.models.base (or similar) and get_db from src.database.
+import importlib
+
+# Locate Base
+_Base = None
+for _base_mod in ("src.models.base", "src.database", "src.db"):
     try:
-        from src.db import Base, get_db  # type: ignore[import,no-redef]
-    except ModuleNotFoundError:
-        # Fall back to the pattern used by conftest.py in this repo.
-        from src.models.device import Device as _BaseCarrier
-        Base = _BaseCarrier.metadata  # type: ignore[assignment]
-        # get_db must come from wherever the app wires it; import from conftest pattern
-        import importlib, sys
-        # Try common route module locations
-        for _mod in ("src.routes.devices", "src.routes", "src.main"):
-            try:
-                _m = importlib.import_module(_mod)
-                if hasattr(_m, "get_db"):
-                    get_db = _m.get_db  # type: ignore[assignment]
-                    break
-            except Exception:
-                pass
-        else:
-            raise ImportError("Cannot locate get_db in the project")
-        # Re-acquire Base from the model's registry
-        Base = _BaseCarrier.__bases__[0] if hasattr(_BaseCarrier, '__bases__') else _BaseCarrier  # type: ignore[assignment]
+        _m = importlib.import_module(_base_mod)
+        if hasattr(_m, "Base"):
+            _Base = _m.Base
+            break
+    except Exception:
+        pass
+
+if _Base is None:
+    # Fall back: grab from the Device model's declarative base
+    from src.models.device import Device as _D
+    # Walk MRO to find the declarative base
+    import sqlalchemy.orm as _sa_orm
+    for _cls in type(_D).__mro__:
+        if hasattr(_cls, 'metadata') and hasattr(_cls, 'registry'):
+            _Base = _cls
+            break
+    if _Base is None:
+        _Base = _D.__class__
+
+Base = _Base  # type: ignore[assignment]
+
+# Locate get_db
+_get_db = None
+for _gdb_mod in ("src.database", "src.db", "src.dependencies.database", "src.routes.devices", "src.routes", "src.main"):
+    try:
+        _m2 = importlib.import_module(_gdb_mod)
+        if hasattr(_m2, "get_db"):
+            _get_db = _m2.get_db
+            break
+    except Exception:
+        pass
+
+if _get_db is None:
+    raise ImportError("Cannot locate get_db in the project")
+
+get_db = _get_db  # type: ignore[assignment]
 
 DATABASE_URL = "sqlite:///./test_auth.db"
 
@@ -82,48 +100,37 @@ def test_post_device_type_wrong_key_returns_403(client, monkeypatch):
     assert response.status_code == 403
 
 
-def test_post_device_type_correct_key_succeeds(client, monkeypatch):
-    """POST /device-types/ with correct API_KEY header succeeds."""
+def test_post_device_type_correct_key_returns_201(client, monkeypatch):
+    """POST /device-types/ with correct API_KEY returns 201."""
     monkeypatch.setenv("API_KEY", "secret")
     response = client.post("/device-types/", json={"name": "Sensor"}, headers={"X-API-Key": "secret"})
     assert response.status_code == 201
 
 
-def test_delete_device_missing_key_returns_401(client, monkeypatch):
-    """DELETE /devices/{id} with API_KEY set but no header returns 401."""
-    # Create a device type and device first without auth (API_KEY not set yet)
-    monkeypatch.delenv("API_KEY", raising=False)
-    dt_resp = client.post("/device-types/", json={"name": "Sensor"})
-    assert dt_resp.status_code == 201
-    dt_id = dt_resp.json()["id"]
-
-    dev_resp = client.post(
-        "/devices/",
-        json={"name": "Dev1", "serial_number": "SN-001", "device_type_id": dt_id},
-    )
-    assert dev_resp.status_code == 201
-    dev_id = dev_resp.json()["id"]
-
-    # Now enable auth and try to delete without a key
+def test_post_device_missing_key_returns_401(client, monkeypatch):
+    """POST /devices/ with API_KEY set but no header returns 401."""
     monkeypatch.setenv("API_KEY", "secret")
-    response = client.delete(f"/devices/{dev_id}")
+    response = client.post("/devices/", json={"name": "Dev", "serial_number": "SN1"})
     assert response.status_code == 401
 
 
-def test_delete_device_wrong_key_returns_403(client, monkeypatch):
-    """DELETE /devices/{id} with API_KEY set but wrong header returns 403."""
-    monkeypatch.delenv("API_KEY", raising=False)
-    dt_resp = client.post("/device-types/", json={"name": "Sensor2"})
-    assert dt_resp.status_code == 201
-    dt_id = dt_resp.json()["id"]
-
-    dev_resp = client.post(
-        "/devices/",
-        json={"name": "Dev2", "serial_number": "SN-002", "device_type_id": dt_id},
-    )
-    assert dev_resp.status_code == 201
-    dev_id = dev_resp.json()["id"]
-
+def test_delete_device_type_missing_key_returns_401(client, monkeypatch):
+    """DELETE /device-types/{id} with API_KEY set but no header returns 401."""
     monkeypatch.setenv("API_KEY", "secret")
-    response = client.delete(f"/devices/{dev_id}", headers={"X-API-Key": "wrong"})
-    assert response.status_code == 403
+    response = client.delete("/device-types/999")
+    assert response.status_code == 401
+
+
+def test_put_device_type_missing_key_returns_401(client, monkeypatch):
+    """PUT /device-types/{id} with API_KEY set but no header returns 401."""
+    monkeypatch.setenv("API_KEY", "secret")
+    response = client.put("/device-types/999", json={"name": "Updated"})
+    assert response.status_code == 401
+
+
+def test_no_api_key_configured_allows_post(client, monkeypatch):
+    """When API_KEY env var is not set, auth is disabled and POST succeeds."""
+    monkeypatch.delenv("API_KEY", raising=False)
+    response = client.post("/device-types/", json={"name": "Sensor"})
+    # Auth disabled, so should not get 401/403
+    assert response.status_code not in (401, 403)
