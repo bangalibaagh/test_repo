@@ -75,3 +75,7 @@ def health_check() -> dict:
 from src.routes.device_type_route import router as device_type_router  # noqa: E402
 
 app.include_router(device_type_router)
+
+from src.routes.location_route import router as location_router  # noqa: E402
+
+app.include_router(location_router)
