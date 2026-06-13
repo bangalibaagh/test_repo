@@ -144,12 +144,16 @@ def update(db: Session, device_id: int, data: DeviceUpdate) -> Device:
     update_data = data.model_dump(exclude_unset=True)
 
     if "device_type_id" in update_data and update_data["device_type_id"] is not None:
-        device_type = db.query(DeviceType).filter(DeviceType.id == update_data["device_type_id"]).first()
+        device_type = db.query(DeviceType).filter(
+            DeviceType.id == update_data["device_type_id"]
+        ).first()
         if not device_type:
             raise HTTPException(status_code=404, detail="device_type not found")
 
     if "location_id" in update_data and update_data["location_id"] is not None:
-        location = db.query(Location).filter(Location.id == update_data["location_id"]).first()
+        location = db.query(Location).filter(
+            Location.id == update_data["location_id"]
+        ).first()
         if not location:
             raise HTTPException(status_code=404, detail="location not found")
 

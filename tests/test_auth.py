@@ -13,10 +13,10 @@ from src.models.device import Device  # noqa: F401 - ensure models are registere
 from src.models.device_type import DeviceType  # noqa: F401
 from src.models.location import Location  # noqa: F401
 
-# Import Base and get_db using the same pattern as conftest.py.
+# Import Base using the same pattern as conftest.py.
 import importlib
 
-# Locate Base
+# Locate Base - try known module paths first
 _Base = None
 for _base_mod in ("src.models.base", "src.database", "src.db"):
     try:
@@ -28,15 +28,23 @@ for _base_mod in ("src.models.base", "src.database", "src.db"):
         pass
 
 if _Base is None:
-    # Fall back: grab from the Device model's declarative base
+    # Fall back: grab from the Device model's declarative base via __bases__
     from src.models.device import Device as _D
-    import sqlalchemy.orm as _sa_orm
+    # The declarative base is the class that has both 'metadata' and 'registry'
+    # It's accessible via Device's MRO - look for a class with metadata attr
     for _cls in type(_D).__mro__:
         if hasattr(_cls, 'metadata') and hasattr(_cls, 'registry'):
             _Base = _cls
             break
     if _Base is None:
-        _Base = _D.__class__
+        # Try getting it from the instance's class hierarchy
+        for _cls in _D.__mro__:
+            if hasattr(_cls, 'metadata') and hasattr(_cls, 'registry'):
+                _Base = _cls
+                break
+
+if _Base is None:
+    raise ImportError("Cannot locate declarative Base in the project")
 
 Base = _Base  # type: ignore[assignment]
 
@@ -60,18 +68,7 @@ for _gdb_mod in (
     except Exception:
         pass
 
-# Last resort: check conftest for the override pattern
 if _get_db is None:
-    try:
-        import tests.conftest as _conftest
-        if hasattr(_conftest, "get_db"):
-            _get_db = _conftest.get_db
-    except Exception:
-        pass
-
-if _get_db is None:
-    # Try to find get_db by inspecting app dependency overrides keys
-    # or by scanning all src submodules
     import pkgutil
     import src
     for _importer, _modname, _ispkg in pkgutil.walk_packages(
@@ -112,86 +109,126 @@ def override_get_db():
 @pytest.fixture(autouse=True)
 def setup_db():
     Base.metadata.create_all(bind=engine)
+    app.dependency_overrides[get_db] = override_get_db
     yield
+    app.dependency_overrides.clear()
     Base.metadata.drop_all(bind=engine)
 
 
-@pytest.fixture()
-def client():
-    app.dependency_overrides[get_db] = override_get_db
-    with TestClient(app) as c:
-        yield c
-    app.dependency_overrides.clear()
+client = TestClient(app)
 
 
-def test_post_device_type_missing_key_returns_401(client, monkeypatch):
-    """POST /device-types/ with API_KEY set but no header returns 401."""
-    monkeypatch.setenv("API_KEY", "secret")
-    response = client.post("/device-types/", json={"name": "Sensor"})
-    assert response.status_code == 401
+def test_post_device_type_wrong_key_returns_403():
+    """A wrong API key should return 403."""
+    os.environ["API_KEY"] = "correct-key"
+    try:
+        response = client.post(
+            "/device-types/",
+            json={"name": "Sensor"},
+            headers={"X-API-Key": "wrong-key"},
+        )
+        assert response.status_code == 403
+    finally:
+        del os.environ["API_KEY"]
 
 
-def test_post_device_type_wrong_key_returns_403(client, monkeypatch):
-    """POST /device-types/ with API_KEY set but wrong header returns 403."""
-    monkeypatch.setenv("API_KEY", "secret")
-    response = client.post(
-        "/device-types/",
-        json={"name": "Sensor"},
-        headers={"X-API-Key": "wrong"},
-    )
-    assert response.status_code == 403
+def test_post_device_type_missing_key_returns_401():
+    """A missing API key header should return 401."""
+    os.environ["API_KEY"] = "correct-key"
+    try:
+        response = client.post(
+            "/device-types/",
+            json={"name": "Sensor"},
+        )
+        assert response.status_code == 401
+    finally:
+        del os.environ["API_KEY"]
 
 
-def test_post_device_type_correct_key_returns_201(client, monkeypatch):
-    """POST /device-types/ with correct API key returns 201."""
-    monkeypatch.setenv("API_KEY", "secret")
-    response = client.post(
-        "/device-types/",
-        json={"name": "Sensor"},
-        headers={"X-API-Key": "secret"},
-    )
-    assert response.status_code == 201
+def test_post_device_type_correct_key_returns_201():
+    """A correct API key should return 201."""
+    os.environ["API_KEY"] = "correct-key"
+    try:
+        response = client.post(
+            "/device-types/",
+            json={"name": "Sensor"},
+            headers={"X-API-Key": "correct-key"},
+        )
+        assert response.status_code == 201
+    finally:
+        del os.environ["API_KEY"]
 
 
-def test_post_device_missing_key_returns_401(client, monkeypatch):
-    """POST /devices/ with API_KEY set but no header returns 401."""
-    monkeypatch.setenv("API_KEY", "secret")
-    response = client.post(
-        "/devices/",
-        json={"name": "Dev1", "serial_number": "SN001"},
-    )
-    assert response.status_code == 401
+def test_post_device_missing_key_returns_401():
+    """A missing API key header on device creation should return 401."""
+    os.environ["API_KEY"] = "correct-key"
+    try:
+        response = client.post(
+            "/devices/",
+            json={
+                "name": "Dev1",
+                "serial_number": "SN-001",
+            },
+        )
+        assert response.status_code == 401
+    finally:
+        del os.environ["API_KEY"]
 
 
-def test_delete_device_type_missing_key_returns_401(client, monkeypatch):
-    """DELETE /device-types/{id} with API_KEY set but no header returns 401."""
-    monkeypatch.setenv("API_KEY", "secret")
-    response = client.delete("/device-types/1")
-    assert response.status_code == 401
+def test_delete_device_type_missing_key_returns_401():
+    """A missing API key header on device-type deletion should return 401."""
+    os.environ["API_KEY"] = "correct-key"
+    try:
+        response = client.delete(
+            "/device-types/999",
+        )
+        assert response.status_code == 401
+    finally:
+        del os.environ["API_KEY"]
 
 
-def test_put_device_type_missing_key_returns_401(client, monkeypatch):
-    """PUT /device-types/{id} with API_KEY set but no header returns 401."""
-    monkeypatch.setenv("API_KEY", "secret")
-    response = client.put("/device-types/1", json={"name": "Updated"})
-    assert response.status_code == 401
+def test_put_device_type_missing_key_returns_401():
+    """A missing API key header on device-type update should return 401."""
+    os.environ["API_KEY"] = "correct-key"
+    try:
+        response = client.put(
+            "/device-types/999",
+            json={"name": "Updated"},
+        )
+        assert response.status_code == 401
+    finally:
+        del os.environ["API_KEY"]
 
 
-def test_no_api_key_configured_allows_post(client, monkeypatch):
-    """When API_KEY env var is unset, mutating endpoints return 403 (server misconfigured).
+def test_no_api_key_configured_raises_403():
+    """When API_KEY env var is not set, mutating endpoints must return 403.
 
-    NOTE: Per security policy, an unset or empty API_KEY is treated as a
-    server misconfiguration and returns 403, NOT 200/201. This prevents
-    accidental auth bypass in production.
+    Security: an unset or empty API_KEY must NOT silently bypass auth.
+    This replaces the old 'allows_post' behaviour which was a security hole.
     """
-    monkeypatch.delenv("API_KEY", raising=False)
-    response = client.post("/device-types/", json={"name": "Sensor"})
-    # Auth is enforced even when API_KEY is unset - server returns 403
+    # Ensure API_KEY is absent from the environment
+    os.environ.pop("API_KEY", None)
+    response = client.post(
+        "/device-types/",
+        json={"name": "Sensor"},
+        headers={"X-API-Key": "any-key"},
+    )
+    # Server must refuse when no key is configured - 403 is the correct response
     assert response.status_code == 403
 
 
-def test_empty_api_key_env_returns_403(client, monkeypatch):
-    """When API_KEY is set to empty string, mutating endpoints return 403."""
-    monkeypatch.setenv("API_KEY", "")
-    response = client.post("/device-types/", json={"name": "Sensor"})
-    assert response.status_code == 403
+def test_empty_api_key_env_raises_403():
+    """When API_KEY env var is set to empty string, mutating endpoints must return 403.
+
+    Security: an empty-string API_KEY must NOT bypass auth.
+    """
+    os.environ["API_KEY"] = ""
+    try:
+        response = client.post(
+            "/device-types/",
+            json={"name": "Sensor"},
+            headers={"X-API-Key": ""},
+        )
+        assert response.status_code == 403
+    finally:
+        del os.environ["API_KEY"]
