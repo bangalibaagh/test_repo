@@ -78,6 +78,16 @@ def test_update_location(client):
     assert response.json()["name"] == "New Name"
 
 
+def test_update_location_not_found(client):
+    """Test that updating a non-existent location returns 404.
+
+    Args:
+        client: The shared TestClient fixture.
+    """
+    response = client.put("/locations/9999", json={"name": "Ghost Location"})
+    assert response.status_code == 404
+
+
 def test_delete_location(client):
     """Test that a location can be deleted and is no longer retrievable.
 
@@ -90,3 +100,13 @@ def test_delete_location(client):
     assert delete_response.status_code == 204
     get_response = client.get(f"/locations/{location_id}")
     assert get_response.status_code == 404
+
+
+def test_delete_location_not_found(client):
+    """Test that deleting a non-existent location returns 404.
+
+    Args:
+        client: The shared TestClient fixture.
+    """
+    response = client.delete("/locations/9999")
+    assert response.status_code == 404

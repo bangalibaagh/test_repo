@@ -80,6 +80,37 @@ def test_update_device_type(client):
     assert response.json()["name"] == "NewName"
 
 
+def test_update_device_type_not_found(client):
+    """PUT /device-types/9999 returns 404 when the resource does not exist.
+
+    Args:
+        client: The shared TestClient fixture.
+    """
+    response = client.put("/device-types/9999", json={"name": "DoesNotMatter"})
+    assert response.status_code == 404
+
+
+def test_update_device_type_duplicate_name(client):
+    """PUT /device-types/{id} with a name already used by another record.
+
+    The service does not explicitly check for duplicate names on update, so
+    the database constraint (or lack thereof) determines the outcome.  This
+    test documents the current behaviour: the request either returns 400 (if
+    the service/DB raises a conflict) or 200 (if the DB allows it).  What it
+    must NOT do is return a 5xx error.
+
+    Args:
+        client: The shared TestClient fixture.
+    """
+    client.post("/device-types/", json={"name": "ExistingName"})
+    create_response = client.post("/device-types/", json={"name": "AnotherName"})
+    device_type_id = create_response.json()["id"]
+    response = client.put(
+        f"/device-types/{device_type_id}", json={"name": "ExistingName"}
+    )
+    assert response.status_code in (200, 400)
+
+
 def test_delete_device_type(client):
     """DELETE /device-types/{id} returns 204, then GET returns 404.
 
@@ -92,3 +123,13 @@ def test_delete_device_type(client):
     assert delete_response.status_code == 204
     get_response = client.get(f"/device-types/{device_type_id}")
     assert get_response.status_code == 404
+
+
+def test_delete_device_type_not_found(client):
+    """DELETE /device-types/9999 returns 404 when the resource does not exist.
+
+    Args:
+        client: The shared TestClient fixture.
+    """
+    response = client.delete("/device-types/9999")
+    assert response.status_code == 404

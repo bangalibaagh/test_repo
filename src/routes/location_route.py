@@ -10,6 +10,7 @@ from fastapi import APIRouter, Depends, Response
 from sqlalchemy.orm import Session
 
 from src.config.database import get_db
+from src.dependencies.auth import require_api_key
 from src.schemas.location import LocationCreate, LocationOut, LocationUpdate
 from src.services import location_service
 
@@ -31,7 +32,9 @@ def list_locations(db: Session = Depends(get_db)) -> List[LocationOut]:
 
 @router.post("/", response_model=LocationOut, status_code=201)
 def create_location(
-    data: LocationCreate, db: Session = Depends(get_db)
+    data: LocationCreate,
+    db: Session = Depends(get_db),
+    _: str = Depends(require_api_key),
 ) -> LocationOut:
     """Create a new location.
 
@@ -63,7 +66,10 @@ def get_location(
 
 @router.put("/{location_id}", response_model=LocationOut, status_code=200)
 def update_location(
-    location_id: int, data: LocationUpdate, db: Session = Depends(get_db)
+    location_id: int,
+    data: LocationUpdate,
+    db: Session = Depends(get_db),
+    _: str = Depends(require_api_key),
 ) -> LocationOut:
     """Update an existing location.
 
@@ -80,7 +86,9 @@ def update_location(
 
 @router.delete("/{location_id}", status_code=204)
 def delete_location(
-    location_id: int, db: Session = Depends(get_db)
+    location_id: int,
+    db: Session = Depends(get_db),
+    _: str = Depends(require_api_key),
 ) -> Response:
     """Delete a location by id.
 

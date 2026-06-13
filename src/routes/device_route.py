@@ -10,6 +10,7 @@ from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
 from src.config.database import get_db
+from src.dependencies.auth import require_api_key
 from src.schemas.device import DeviceCreate, DeviceOut, DeviceUpdate
 from src.services import device_service
 
@@ -30,7 +31,11 @@ def list_devices(db: Session = Depends(get_db)):
 
 
 @router.post("/", response_model=DeviceOut, status_code=status.HTTP_201_CREATED)
-def create_device(data: DeviceCreate, db: Session = Depends(get_db)):
+def create_device(
+    data: DeviceCreate,
+    db: Session = Depends(get_db),
+    _: str = Depends(require_api_key),
+):
     """Create a new device record.
 
     Args:
@@ -58,7 +63,12 @@ def get_device(device_id: int, db: Session = Depends(get_db)):
 
 
 @router.put("/{device_id}", response_model=DeviceOut, status_code=status.HTTP_200_OK)
-def update_device(device_id: int, data: DeviceUpdate, db: Session = Depends(get_db)):
+def update_device(
+    device_id: int,
+    data: DeviceUpdate,
+    db: Session = Depends(get_db),
+    _: str = Depends(require_api_key),
+):
     """Update an existing device record.
 
     Args:
@@ -73,7 +83,11 @@ def update_device(device_id: int, data: DeviceUpdate, db: Session = Depends(get_
 
 
 @router.delete("/{device_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_device(device_id: int, db: Session = Depends(get_db)):
+def delete_device(
+    device_id: int,
+    db: Session = Depends(get_db),
+    _: str = Depends(require_api_key),
+):
     """Delete a device record.
 
     Args:

@@ -152,6 +152,16 @@ def test_update_device(client):
     assert resp.json()["name"] == "Device Six Updated"
 
 
+def test_update_device_not_found(client):
+    """PUT /devices/9999 should return 404 when the device does not exist.
+
+    Args:
+        client: Shared TestClient fixture.
+    """
+    resp = client.put("/devices/9999", json={"name": "Ghost Device"})
+    assert resp.status_code == 404
+
+
 def test_delete_device(client):
     """DELETE /devices/{id} should return 204 and subsequent GET should return 404.
 
@@ -163,3 +173,13 @@ def test_delete_device(client):
     assert resp.status_code == 204
     get_resp = client.get(f"/devices/{created['id']}")
     assert get_resp.status_code == 404
+
+
+def test_delete_device_not_found(client):
+    """DELETE /devices/9999 should return 404 when the device does not exist.
+
+    Args:
+        client: Shared TestClient fixture.
+    """
+    resp = client.delete("/devices/9999")
+    assert resp.status_code == 404
