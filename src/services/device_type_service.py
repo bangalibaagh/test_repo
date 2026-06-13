@@ -7,6 +7,7 @@ handling for device type records.
 import logging
 
 from fastapi import HTTPException
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from src.models.device_type import DeviceType
@@ -59,11 +60,20 @@ def create_device_type(db: Session, data: DeviceTypeCreate) -> DeviceType:
 
     Returns:
         The newly created DeviceType ORM instance.
+
+    Raises:
+        HTTPException: 409 if a device type with the same name already exists.
     """
     logger.info({"action": "create_device_type", "name": data.name})
     instance = DeviceType(name=data.name, description=data.description)
     db.add(instance)
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(
+            status_code=409, detail="A device type with this name already exists"
+        )
     db.refresh(instance)
     return instance
 
@@ -83,13 +93,20 @@ def update_device_type(
 
     Raises:
         HTTPException: 404 if no device type with the given ID exists.
+        HTTPException: 409 if the new name conflicts with an existing device type.
     """
     logger.info({"action": "update_device_type", "device_type_id": device_type_id})
     instance = get_device_type(db, device_type_id)
     update_data = data.model_dump(exclude_unset=True)
     for field, value in update_data.items():
         setattr(instance, field, value)
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(
+            status_code=409, detail="A device type with this name already exists"
+        )
     db.refresh(instance)
     return instance
 

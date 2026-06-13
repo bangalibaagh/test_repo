@@ -45,7 +45,9 @@ def test_list_device_types_contains_item(client: TestClient) -> None:
 
 def test_get_device_type_by_id(client: TestClient) -> None:
     """GET /{id} returns 200 and the correct device type fields."""
-    created = client.post("/device-types/", json={"name": "Hub", "description": "Hub device"}).json()
+    created = client.post(
+        "/device-types/", json={"name": "Hub", "description": "Hub device"}
+    ).json()
     device_type_id = created["id"]
     response = client.get(f"/device-types/{device_type_id}")
     assert response.status_code == 200
@@ -77,15 +79,15 @@ def test_update_device_type_not_found(client: TestClient) -> None:
 
 
 def test_update_device_type_duplicate_name(client: TestClient) -> None:
-    """PUT /{id} with a name that already exists returns a non-200 error status."""
-    client.post("/device-types/", json={"name": "Alpha"})
-    second = client.post("/device-types/", json={"name": "Beta"}).json()
-    response = client.put(f"/device-types/{second['id']}", json={"name": "Alpha"})
-    assert response.status_code != 200
+    """PUT /{id} with a duplicate name returns a conflict error status."""
+    client.post("/device-types/", json={"name": "TypeA"})
+    created_b = client.post("/device-types/", json={"name": "TypeB"}).json()
+    response = client.put(f"/device-types/{created_b['id']}", json={"name": "TypeA"})
+    assert response.status_code == 409
 
 
 def test_delete_device_type(client: TestClient) -> None:
-    """DELETE /{id} returns 204 with no content."""
+    """DELETE /{id} returns 204 and the record is no longer accessible."""
     created = client.post("/device-types/", json={"name": "ToDelete"}).json()
     device_type_id = created["id"]
     response = client.delete(f"/device-types/{device_type_id}")
