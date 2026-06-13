@@ -7,7 +7,7 @@ allowing settings to be overridden via environment variables or a .env file.
 from pydantic import field_validator
 from pydantic_settings import BaseSettings
 
-_ALLOWED_DB_SCHEMES = {"sqlite"}
+_ALLOWED_DB_SCHEMES = {"sqlite", "postgresql", "postgresql+asyncpg", "postgresql+psycopg2", "mysql", "mysql+pymysql", "mysql+mysqlconnector"}
 
 
 class Settings(BaseSettings):

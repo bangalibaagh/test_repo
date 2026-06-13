@@ -96,6 +96,8 @@ def create(db: Session, data: LocationCreate) -> Location:
     location = Location(
         name=data.name,
         address=getattr(data, "address", None),
+        latitude=getattr(data, "latitude", None),
+        longitude=getattr(data, "longitude", None),
     )
     db.add(location)
     db.commit()
