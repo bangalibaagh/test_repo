@@ -99,4 +99,4 @@ def delete_location(location_id: int, db: Session = Depends(get_db)):
     deleted = location_service.delete(db, location_id)
     if not deleted:
         raise HTTPException(status_code=404, detail="Location not found")
-    return Response()
+    return Response(status_code=204)

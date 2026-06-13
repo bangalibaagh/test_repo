@@ -96,10 +96,9 @@ def delete(db: Session, location_id: int) -> bool:
         True if the record was deleted, False if it was not found.
     """
     location = db.query(Location).filter(Location.id == location_id).first()
+    logger.info({"action": "delete_location", "location_id": location_id, "found": location is not None})
     if location is None:
-        logger.info({"action": "delete_location", "location_id": location_id, "found": False})
         return False
     db.delete(location)
     db.commit()
-    logger.info({"action": "delete_location", "location_id": location_id, "found": True})
     return True
