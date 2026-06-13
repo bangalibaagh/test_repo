@@ -91,22 +91,18 @@ def test_update_device_type_not_found(client):
 
 
 def test_update_device_type_duplicate_name(client):
-    """PUT /device-types/{id} with a name already used by another record.
+    """PUT /device-types/{id} with a name already used by another record returns 400.
 
-    The service checks for duplicate names on update and returns 400 when
-    the requested name is already taken by a different record.  The response
-    must NOT be a 5xx error.
+    The service checks for duplicate names when renaming a DeviceType and
+    should raise 400 rather than allowing a DB constraint violation.
 
     Args:
         client: The shared TestClient fixture.
     """
-    client.post("/device-types/", json={"name": "ExistingName"})
-    create_response = client.post("/device-types/", json={"name": "AnotherName"})
-    device_type_id = create_response.json()["id"]
-    response = client.put(
-        f"/device-types/{device_type_id}", json={"name": "ExistingName"}
-    )
-    assert response.status_code < 500
+    client.post("/device-types/", json={"name": "TypeAlpha"})
+    second = client.post("/device-types/", json={"name": "TypeBeta"})
+    second_id = second.json()["id"]
+    response = client.put(f"/device-types/{second_id}", json={"name": "TypeAlpha"})
     assert response.status_code == 400
 
 

@@ -22,7 +22,7 @@ class _JsonFormatter(logging.Formatter):
         log_object = {
             "timestamp": datetime.now(tz=timezone.utc).isoformat(),
             "level": record.levelname,
-            "name": record.name,
+            "logger": record.name,
             "message": record.getMessage(),
         }
         if record.exc_info:
@@ -70,7 +70,7 @@ def get_by_id(db: Session, device_type_id: int) -> DeviceType:
     """
     device_type = db.query(DeviceType).filter(DeviceType.id == device_type_id).first()
     if not device_type:
-        logger.warning("DeviceType not found", extra={"device_type_id": device_type_id})
+        logger.warning("DeviceType not found with id %s", device_type_id)
         raise HTTPException(status_code=404, detail="DeviceType not found")
     return device_type
 
@@ -90,7 +90,7 @@ def create(db: Session, data: DeviceTypeCreate) -> DeviceType:
     """
     existing = db.query(DeviceType).filter(DeviceType.name == data.name).first()
     if existing:
-        logger.warning("Duplicate device type name", extra={"name": data.name})
+        logger.warning("Duplicate device type name: %s", data.name)
         raise HTTPException(status_code=400, detail="Device type name already in use")
 
     device_type = DeviceType(
@@ -100,7 +100,7 @@ def create(db: Session, data: DeviceTypeCreate) -> DeviceType:
     db.add(device_type)
     db.commit()
     db.refresh(device_type)
-    logger.info("Created device type", extra={"device_type_id": device_type.id})
+    logger.info("Created device type with id %s", device_type.id)
     return device_type
 
 
@@ -123,25 +123,24 @@ def update(db: Session, device_type_id: int, data: DeviceTypeUpdate) -> DeviceTy
 
     update_data = data.model_dump(exclude_unset=True)
 
-    if "name" in update_data:
+    if "name" in update_data and update_data["name"] != device_type.name:
         conflict = (
             db.query(DeviceType)
-            .filter(DeviceType.name == update_data["name"], DeviceType.id != device_type_id)
+            .filter(DeviceType.name == update_data["name"])
             .first()
         )
         if conflict:
-            logger.warning(
-                "Duplicate device type name on update",
-                extra={"name": update_data["name"]},
+            logger.warning("Duplicate device type name on update: %s", update_data["name"])
+            raise HTTPException(
+                status_code=400, detail="Device type name already in use"
             )
-            raise HTTPException(status_code=400, detail="Device type name already in use")
 
     for field, value in update_data.items():
         setattr(device_type, field, value)
 
     db.commit()
     db.refresh(device_type)
-    logger.info("Updated device type", extra={"device_type_id": device_type.id})
+    logger.info("Updated device type with id %s", device_type_id)
     return device_type
 
 
@@ -158,4 +157,4 @@ def delete(db: Session, device_type_id: int) -> None:
     device_type = get_by_id(db, device_type_id)
     db.delete(device_type)
     db.commit()
-    logger.info("Deleted device type", extra={"device_type_id": device_type_id})
+    logger.info("Deleted device type with id %s", device_type_id)

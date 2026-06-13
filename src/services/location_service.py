@@ -1,10 +1,14 @@
-"""Business logic layer for Location CRUD operations.
+"""Business logic layer for the Location resource.
 
-This module provides service functions that interact with the database
-for creating, reading, updating, and deleting Location records.
+This module provides CRUD helper functions used by the location routes.
+All database interactions are performed through the supplied SQLAlchemy
+session. HTTPException is raised for client-facing error conditions.
 """
 
 import logging
+import json
+from datetime import datetime, timezone
+from typing import List
 
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
@@ -12,38 +16,61 @@ from sqlalchemy.orm import Session
 from src.models.location import Location
 from src.schemas.location import LocationCreate, LocationUpdate
 
-logger = logging.getLogger(__name__)
+
+class _JsonFormatter(logging.Formatter):
+    def format(self, record: logging.LogRecord) -> str:
+        log_object = {
+            "timestamp": datetime.now(tz=timezone.utc).isoformat(),
+            "level": record.levelname,
+            "logger": record.name,
+            "message": record.getMessage(),
+        }
+        if record.exc_info:
+            log_object["exc_info"] = self.formatException(record.exc_info)
+        return json.dumps(log_object)
 
 
-def get_all(db: Session) -> list[Location]:
-    """Retrieve all locations from the database.
+def _get_logger(name: str) -> logging.Logger:
+    handler = logging.StreamHandler()
+    handler.setFormatter(_JsonFormatter())
+    logger = logging.getLogger(name)
+    if not logger.handlers:
+        logger.addHandler(handler)
+    return logger
+
+
+logger = _get_logger(__name__)
+
+
+def get_all(db: Session) -> List[Location]:
+    """Retrieve all location records.
 
     Args:
-        db: The database session.
+        db: Active SQLAlchemy database session.
 
     Returns:
-        A list of all Location records.
+        A list of Location ORM instances.
     """
-    logger.info('{"action": "get_all_locations"}')
+    logger.info("Fetching all locations")
     return db.query(Location).all()
 
 
 def get_by_id(db: Session, location_id: int) -> Location:
-    """Retrieve a single location by its primary key.
+    """Retrieve a single location by primary key.
 
     Args:
-        db: The database session.
-        location_id: The primary key of the location to retrieve.
+        db: Active SQLAlchemy database session.
+        location_id: Primary key of the location to retrieve.
 
     Returns:
-        The Location record with the given id.
+        The matching Location ORM instance.
 
     Raises:
         HTTPException: 404 if no location with the given id exists.
     """
-    logger.info('{"action": "get_location_by_id", "location_id": %s}', location_id)
     location = db.query(Location).filter(Location.id == location_id).first()
-    if location is None:
+    if not location:
+        logger.warning("Location not found with id %s", location_id)
         raise HTTPException(status_code=404, detail="Location not found")
     return location
 
@@ -52,53 +79,66 @@ def create(db: Session, data: LocationCreate) -> Location:
     """Create a new location record.
 
     Args:
-        db: The database session.
-        data: The validated data for the new location.
+        db: Active SQLAlchemy database session.
+        data: Validated creation payload.
 
     Returns:
-        The newly created Location record.
+        The newly created Location ORM instance.
 
     Raises:
-        HTTPException: 400 if a location with the same name already exists.
+        HTTPException: 400 if the name is already in use.
     """
-    logger.info('{"action": "create_location", "name": "%s"}'  , data.name)
     existing = db.query(Location).filter(Location.name == data.name).first()
-    if existing is not None:
-        raise HTTPException(status_code=400, detail="Location name already exists")
+    if existing:
+        logger.warning("Duplicate location name: %s", data.name)
+        raise HTTPException(status_code=400, detail="Location name already in use")
+
     location = Location(
         name=data.name,
-        address=data.address,
-        latitude=data.latitude,
-        longitude=data.longitude,
+        address=getattr(data, "address", None),
     )
     db.add(location)
     db.commit()
     db.refresh(location)
+    logger.info("Created location with id %s", location.id)
     return location
 
 
 def update(db: Session, location_id: int, data: LocationUpdate) -> Location:
     """Update an existing location record.
 
-    Only fields that are not None in ``data`` will be applied.
-
     Args:
-        db: The database session.
-        location_id: The primary key of the location to update.
-        data: The validated partial update data.
+        db: Active SQLAlchemy database session.
+        location_id: Primary key of the location to update.
+        data: Validated update payload.
 
     Returns:
-        The updated Location record.
+        The updated Location ORM instance.
 
     Raises:
         HTTPException: 404 if no location with the given id exists.
+        HTTPException: 400 if the new name is already used by another record.
     """
-    logger.info('{"action": "update_location", "location_id": %s}', location_id)
     location = get_by_id(db, location_id)
-    for field, value in data.model_dump(exclude_none=True).items():
+
+    update_data = data.model_dump(exclude_unset=True)
+
+    if "name" in update_data and update_data["name"] != location.name:
+        conflict = (
+            db.query(Location)
+            .filter(Location.name == update_data["name"])
+            .first()
+        )
+        if conflict:
+            logger.warning("Duplicate location name on update: %s", update_data["name"])
+            raise HTTPException(status_code=400, detail="Location name already in use")
+
+    for field, value in update_data.items():
         setattr(location, field, value)
+
     db.commit()
     db.refresh(location)
+    logger.info("Updated location with id %s", location_id)
     return location
 
 
@@ -106,13 +146,13 @@ def delete(db: Session, location_id: int) -> None:
     """Delete a location record.
 
     Args:
-        db: The database session.
-        location_id: The primary key of the location to delete.
+        db: Active SQLAlchemy database session.
+        location_id: Primary key of the location to delete.
 
     Raises:
         HTTPException: 404 if no location with the given id exists.
     """
-    logger.info('{"action": "delete_location", "location_id": %s}', location_id)
     location = get_by_id(db, location_id)
     db.delete(location)
     db.commit()
+    logger.info("Deleted location with id %s", location_id)

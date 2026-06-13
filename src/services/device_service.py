@@ -24,7 +24,7 @@ class _JsonFormatter(logging.Formatter):
         log_object = {
             "timestamp": datetime.now(tz=timezone.utc).isoformat(),
             "level": record.levelname,
-            "name": record.name,
+            "logger": record.name,
             "message": record.getMessage(),
         }
         if record.exc_info:
@@ -72,7 +72,7 @@ def get_by_id(db: Session, device_id: int) -> Device:
     """
     device = db.query(Device).filter(Device.id == device_id).first()
     if not device:
-        logger.warning("Device not found", extra={"device_id": device_id})
+        logger.warning("Device not found with id %s", device_id)
         raise HTTPException(status_code=404, detail="Device not found")
     return device
 
@@ -94,30 +94,33 @@ def create(db: Session, data: DeviceCreate) -> Device:
     """
     existing = db.query(Device).filter(Device.serial_number == data.serial_number).first()
     if existing:
-        logger.warning("Duplicate serial_number", extra={"serial_number": data.serial_number})
+        logger.warning("Duplicate serial_number: %s", data.serial_number)
         raise HTTPException(status_code=400, detail="serial_number already in use")
 
     if data.device_type_id is not None:
-        dt = db.query(DeviceType).filter(DeviceType.id == data.device_type_id).first()
-        if not dt:
+        device_type = db.query(DeviceType).filter(DeviceType.id == data.device_type_id).first()
+        if not device_type:
+            logger.warning("DeviceType not found with id %s", data.device_type_id)
             raise HTTPException(status_code=404, detail="DeviceType not found")
 
     if data.location_id is not None:
-        loc = db.query(Location).filter(Location.id == data.location_id).first()
-        if not loc:
+        location = db.query(Location).filter(Location.id == data.location_id).first()
+        if not location:
+            logger.warning("Location not found with id %s", data.location_id)
             raise HTTPException(status_code=404, detail="Location not found")
 
     device = Device(
         serial_number=data.serial_number,
         name=data.name,
-        status=data.status if data.status else "active",
+        status=getattr(data, "status", "active") or "active",
         device_type_id=data.device_type_id,
         location_id=data.location_id,
+        description=getattr(data, "description", None),
     )
     db.add(device)
     db.commit()
     db.refresh(device)
-    logger.info("Created device", extra={"device_id": device.id})
+    logger.info("Created device with id %s", device.id)
     return device
 
 
@@ -142,13 +145,17 @@ def update(db: Session, device_id: int, data: DeviceUpdate) -> Device:
     update_data = data.model_dump(exclude_unset=True)
 
     if "device_type_id" in update_data and update_data["device_type_id"] is not None:
-        dt = db.query(DeviceType).filter(DeviceType.id == update_data["device_type_id"]).first()
-        if not dt:
+        device_type = db.query(DeviceType).filter(
+            DeviceType.id == update_data["device_type_id"]
+        ).first()
+        if not device_type:
             raise HTTPException(status_code=404, detail="DeviceType not found")
 
     if "location_id" in update_data and update_data["location_id"] is not None:
-        loc = db.query(Location).filter(Location.id == update_data["location_id"]).first()
-        if not loc:
+        location = db.query(Location).filter(
+            Location.id == update_data["location_id"]
+        ).first()
+        if not location:
             raise HTTPException(status_code=404, detail="Location not found")
 
     for field, value in update_data.items():
@@ -156,7 +163,7 @@ def update(db: Session, device_id: int, data: DeviceUpdate) -> Device:
 
     db.commit()
     db.refresh(device)
-    logger.info("Updated device", extra={"device_id": device.id})
+    logger.info("Updated device with id %s", device_id)
     return device
 
 
@@ -173,4 +180,4 @@ def delete(db: Session, device_id: int) -> None:
     device = get_by_id(db, device_id)
     db.delete(device)
     db.commit()
-    logger.info("Deleted device", extra={"device_id": device_id})
+    logger.info("Deleted device with id %s", device_id)

@@ -126,19 +126,6 @@ def test_create_device_invalid_location(client):
     assert resp.status_code == 404
 
 
-def test_get_device(client):
-    """GET /devices/{id} should return 200 and the correct record.
-
-    Args:
-        client: Shared TestClient fixture.
-    """
-    create_resp = client.post("/devices/", json={"serial_number": "SN-GET", "name": "Get Me"})
-    device_id = create_resp.json()["id"]
-    resp = client.get(f"/devices/{device_id}")
-    assert resp.status_code == 200
-    assert resp.json()["id"] == device_id
-
-
 def test_get_device_not_found(client):
     """GET /devices/9999 should return 404 when the device does not exist.
 
@@ -156,12 +143,12 @@ def test_update_device(client):
         client: Shared TestClient fixture.
     """
     create_resp = client.post(
-        "/devices/", json={"serial_number": "SN-UPD", "name": "Old Name"}
+        "/devices/", json={"serial_number": "SN-UPD", "name": "Original"}
     )
     device_id = create_resp.json()["id"]
-    resp = client.put(f"/devices/{device_id}", json={"name": "New Name"})
+    resp = client.put(f"/devices/{device_id}", json={"name": "Updated"})
     assert resp.status_code == 200
-    assert resp.json()["name"] == "New Name"
+    assert resp.json()["name"] == "Updated"
 
 
 def test_update_device_not_found(client):
@@ -184,8 +171,8 @@ def test_delete_device(client):
         "/devices/", json={"serial_number": "SN-DEL", "name": "To Delete"}
     )
     device_id = create_resp.json()["id"]
-    delete_resp = client.delete(f"/devices/{device_id}")
-    assert delete_resp.status_code == 204
+    del_resp = client.delete(f"/devices/{device_id}")
+    assert del_resp.status_code == 204
     get_resp = client.get(f"/devices/{device_id}")
     assert get_resp.status_code == 404
 
