@@ -98,21 +98,22 @@ def create(db: Session, data: DeviceCreate) -> Device:
         raise HTTPException(status_code=400, detail="serial_number already in use")
 
     if data.device_type_id is not None:
-        if not db.query(DeviceType).filter(DeviceType.id == data.device_type_id).first():
+        device_type = db.query(DeviceType).filter(DeviceType.id == data.device_type_id).first()
+        if not device_type:
             logger.warning("DeviceType not found with id %s", data.device_type_id)
             raise HTTPException(status_code=404, detail="DeviceType not found")
 
     if data.location_id is not None:
-        if not db.query(Location).filter(Location.id == data.location_id).first():
+        location = db.query(Location).filter(Location.id == data.location_id).first()
+        if not location:
             logger.warning("Location not found with id %s", data.location_id)
             raise HTTPException(status_code=404, detail="Location not found")
 
     device = Device(
         serial_number=data.serial_number,
         name=data.name,
-        status=getattr(data, "status", "active") or "active",
         device_type_id=data.device_type_id,
-        location_id=data.location_id,
+        location_id=getattr(data, "location_id", None),
     )
     db.add(device)
     db.commit()
@@ -134,7 +135,6 @@ def update(db: Session, device_id: int, data: DeviceUpdate) -> Device:
 
     Raises:
         HTTPException: 404 if no device with the given id exists.
-        HTTPException: 400 if the new serial_number is already in use by another device.
         HTTPException: 404 if device_type_id is provided but not found.
         HTTPException: 404 if location_id is provided but not found.
     """
@@ -142,25 +142,16 @@ def update(db: Session, device_id: int, data: DeviceUpdate) -> Device:
 
     update_data = data.model_dump(exclude_unset=True)
 
-    if "serial_number" in update_data:
-        conflict = (
-            db.query(Device)
-            .filter(
-                Device.serial_number == update_data["serial_number"],
-                Device.id != device_id,
-            )
-            .first()
-        )
-        if conflict:
-            logger.warning("Duplicate serial_number on update: %s", update_data["serial_number"])
-            raise HTTPException(status_code=400, detail="serial_number already in use")
-
     if "device_type_id" in update_data and update_data["device_type_id"] is not None:
-        if not db.query(DeviceType).filter(DeviceType.id == update_data["device_type_id"]).first():
+        device_type = db.query(DeviceType).filter(DeviceType.id == update_data["device_type_id"]).first()
+        if not device_type:
+            logger.warning("DeviceType not found with id %s", update_data["device_type_id"])
             raise HTTPException(status_code=404, detail="DeviceType not found")
 
     if "location_id" in update_data and update_data["location_id"] is not None:
-        if not db.query(Location).filter(Location.id == update_data["location_id"]).first():
+        location = db.query(Location).filter(Location.id == update_data["location_id"]).first()
+        if not location:
+            logger.warning("Location not found with id %s", update_data["location_id"])
             raise HTTPException(status_code=404, detail="Location not found")
 
     for field, value in update_data.items():

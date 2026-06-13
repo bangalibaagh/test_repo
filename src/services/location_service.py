@@ -119,25 +119,10 @@ def update(db: Session, location_id: int, data: LocationUpdate) -> Location:
 
     Raises:
         HTTPException: 404 if no location with the given id exists.
-        HTTPException: 400 if the new name is already used by another location.
     """
     location = get_by_id(db, location_id)
 
     update_data = data.model_dump(exclude_unset=True)
-
-    if "name" in update_data:
-        conflict = (
-            db.query(Location)
-            .filter(
-                Location.name == update_data["name"],
-                Location.id != location_id,
-            )
-            .first()
-        )
-        if conflict:
-            logger.warning("Duplicate location name on update: %s", update_data["name"])
-            raise HTTPException(status_code=400, detail="Location name already in use")
-
     for field, value in update_data.items():
         setattr(location, field, value)
 

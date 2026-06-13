@@ -8,7 +8,18 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from src.main import app
-from src.database import Base, get_db
+
+# Import Base and get_db from wherever the app defines them.
+# Try src.db first (common pattern), fall back to src.database.
+try:
+    from src.db import Base, get_db  # type: ignore[import]
+except ModuleNotFoundError:
+    try:
+        from src.database import Base, get_db  # type: ignore[import]
+    except ModuleNotFoundError:
+        # Last resort: import from models and dependencies directly
+        from src.models.base import Base  # type: ignore[import]
+        from src.dependencies.database import get_db  # type: ignore[import]
 
 DATABASE_URL = "sqlite:///./test_auth.db"
 
@@ -62,8 +73,7 @@ def test_post_device_type_correct_key_succeeds(client, monkeypatch):
 
 def test_delete_device_missing_key_returns_401(client, monkeypatch):
     """DELETE /devices/{id} with API_KEY set but no header returns 401."""
-    monkeypatch.setenv("API_KEY", "secret")
-    # First create a device type and device without auth (env not set yet at creation time)
+    # Create device type and device without auth (API_KEY not set)
     monkeypatch.delenv("API_KEY", raising=False)
     dt_resp = client.post("/device-types/", json={"name": "TypeA"})
     assert dt_resp.status_code == 201
@@ -85,5 +95,5 @@ def test_put_device_wrong_key_returns_403(client, monkeypatch):
     assert dev_resp.status_code == 201
     device_id = dev_resp.json()["id"]
     monkeypatch.setenv("API_KEY", "secret")
-    response = client.put(f"/devices/{device_id}", json={"name": "Updated"}, headers={"X-API-Key": "bad"})
+    response = client.put(f"/devices/{device_id}", json={"name": "Updated"}, headers={"X-API-Key": "wrong"})
     assert response.status_code == 403
