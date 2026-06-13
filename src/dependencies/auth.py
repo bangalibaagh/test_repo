@@ -12,8 +12,6 @@ from fastapi.security.api_key import APIKeyHeader
 _API_KEY_NAME = "X-API-Key"
 _api_key_header = APIKeyHeader(name=_API_KEY_NAME, auto_error=False)
 
-_API_KEY = os.environ.get("API_KEY", "")
-
 
 def require_api_key(api_key: str = Security(_api_key_header)) -> str:
     """Validate the API key supplied in the X-API-Key request header.
@@ -31,11 +29,11 @@ def require_api_key(api_key: str = Security(_api_key_header)) -> str:
     # Re-read from environment each call so tests can set API_KEY at runtime.
     # Use sentinel None to distinguish "not configured" from "set to empty string".
     effective_key = os.environ.get("API_KEY")  # None if unset, str if set
-    if effective_key is None:
-        # API_KEY not configured at all: auth is disabled (dev/test mode).
-        return ""
-    if not effective_key:
-        # API_KEY is set but empty string: treat as misconfigured, deny all access.
+
+    # Security: both unset and empty-string API_KEY are treated as
+    # misconfigured. Neither bypasses authentication. This prevents accidental
+    # auth disable in production when the env var is missing or blank.
+    if not effective_key:  # covers None and ""
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="API key not configured on server",
