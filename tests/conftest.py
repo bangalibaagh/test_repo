@@ -47,7 +47,7 @@ def client() -> Generator[TestClient, None, None]:
     # Import resource models here so their tables are registered on
     # Base.metadata before create_all is called.  Expand this list as
     # new models are added to the project.
-    # e.g.: from src.models.item import Item  # noqa: F401
+    from src.models.device_type import DeviceType  # noqa: F401
 
     Base.metadata.create_all(bind=engine)
 

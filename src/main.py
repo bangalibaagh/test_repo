@@ -52,6 +52,10 @@ _configure_logging()
 
 app = FastAPI(title="App", version="0.1.0")
 
+from src.routes.device_type_route import router as device_type_router  # noqa: E402
+
+app.include_router(device_type_router)
+
 
 @app.get("/health", status_code=200)
 def health_check() -> dict:
