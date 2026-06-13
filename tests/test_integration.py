@@ -28,6 +28,7 @@ def test_full_device_lifecycle(client):
 
     dev_payload = {
         "name": "lifecycle-dev",
+        "serial_number": "SN-LIFECYCLE-001",
         "device_type_id": device_type_id,
         "location_id": location_id,
     }
@@ -42,10 +43,10 @@ def test_full_device_lifecycle(client):
     assert get_resp.json()["device_type_id"] == device_type_id
     assert get_resp.json()["location_id"] == location_id
 
-    # Build update payload from current device data, changing status if supported
     current = get_resp.json()
     update_payload = {
         "name": current["name"],
+        "serial_number": current["serial_number"],
         "device_type_id": device_type_id,
         "location_id": location_id,
     }
@@ -83,17 +84,20 @@ def test_delete_device_type_does_not_cascade_error(client):
     assert loc_resp.status_code == 201
     location_id = loc_resp.json()["id"]
 
-    dev_payload = {
-        "name": "cascade-dev",
-        "device_type_id": device_type_id,
-        "location_id": location_id,
-    }
-    dev_resp = client.post("/devices/", json=dev_payload)
+    dev_resp = client.post(
+        "/devices/",
+        json={
+            "name": "cascade-dev",
+            "serial_number": "SN-CASCADE-001",
+            "device_type_id": device_type_id,
+            "location_id": location_id,
+        },
+    )
     assert dev_resp.status_code == 201, dev_resp.text
 
-    del_dt_resp = client.delete(f"/device-types/{device_type_id}")
-    assert del_dt_resp.status_code in (204, 409), (
-        f"Expected 204 or 409, got {del_dt_resp.status_code}: {del_dt_resp.text}"
+    del_resp = client.delete(f"/device-types/{device_type_id}")
+    assert del_resp.status_code in (204, 409), (
+        f"Expected 204 or 409, got {del_resp.status_code}: {del_resp.text}"
     )
 
 
@@ -109,23 +113,32 @@ def test_list_all_resources_after_bulk_create(client):
     """
     dt_ids = []
     for i in range(3):
-        resp = client.post("/device-types/", json={"name": f"bulk-dt-{i}", "description": "bulk"})
+        resp = client.post(
+            "/device-types/",
+            json={"name": f"bulk-dt-{i}", "description": f"desc-{i}"},
+        )
         assert resp.status_code == 201, resp.text
         dt_ids.append(resp.json()["id"])
 
     loc_ids = []
     for i in range(3):
-        resp = client.post("/locations/", json={"name": f"bulk-loc-{i}", "address": f"{i} Bulk Rd"})
+        resp = client.post(
+            "/locations/",
+            json={"name": f"bulk-loc-{i}", "address": f"{i} Bulk St"},
+        )
         assert resp.status_code == 201, resp.text
         loc_ids.append(resp.json()["id"])
 
     for i in range(3):
-        dev_payload = {
-            "name": f"bulk-dev-{i}",
-            "device_type_id": dt_ids[i],
-            "location_id": loc_ids[i],
-        }
-        resp = client.post("/devices/", json=dev_payload)
+        resp = client.post(
+            "/devices/",
+            json={
+                "name": f"bulk-dev-{i}",
+                "serial_number": f"SN-BULK-{i:03d}",
+                "device_type_id": dt_ids[i],
+                "location_id": loc_ids[i],
+            },
+        )
         assert resp.status_code == 201, resp.text
 
     dt_list_resp = client.get("/device-types/")
@@ -144,8 +157,9 @@ def test_list_all_resources_after_bulk_create(client):
 def test_update_device_reassign_location(client):
     """Test that a Device can be reassigned to a different Location.
 
-    Creates two Locations and a Device at the first Location, then PUTs the
-    Device with the second Location's id and asserts the location_id is updated.
+    Creates two Locations and a Device at the first Location, then PUTs
+    the Device with the second Location's ID and asserts the location_id
+    is updated correctly.
 
     Args:
         client: The shared TestClient fixture.
@@ -162,19 +176,23 @@ def test_update_device_reassign_location(client):
     assert loc2_resp.status_code == 201
     location_id_2 = loc2_resp.json()["id"]
 
-    dev_payload = {
-        "name": "reassign-dev",
-        "device_type_id": device_type_id,
-        "location_id": location_id_1,
-    }
-    dev_resp = client.post("/devices/", json=dev_payload)
+    dev_resp = client.post(
+        "/devices/",
+        json={
+            "name": "reassign-dev",
+            "serial_number": "SN-REASSIGN-001",
+            "device_type_id": device_type_id,
+            "location_id": location_id_1,
+        },
+    )
     assert dev_resp.status_code == 201, dev_resp.text
     device_id = dev_resp.json()["id"]
     assert dev_resp.json()["location_id"] == location_id_1
 
-    current = client.get(f"/devices/{device_id}").json()
+    current = dev_resp.json()
     update_payload = {
         "name": current["name"],
+        "serial_number": current["serial_number"],
         "device_type_id": device_type_id,
         "location_id": location_id_2,
     }
@@ -187,7 +205,7 @@ def test_update_device_reassign_location(client):
 
 
 def test_health_still_ok(client):
-    """Regression guard: assert the health endpoint returns 200.
+    """Regression guard: assert the health endpoint still returns 200.
 
     Args:
         client: The shared TestClient fixture.
