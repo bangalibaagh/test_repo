@@ -93,7 +93,7 @@ def delete_device_type(device_type_id: int, db: Session = Depends(get_db)):
         db: Database session provided by dependency injection.
 
     Returns:
-        An empty Response with HTTP 204 status.
+        An empty Response with status 204 on success.
 
     Raises:
         HTTPException: 404 if the device type is not found.
@@ -101,4 +101,4 @@ def delete_device_type(device_type_id: int, db: Session = Depends(get_db)):
     deleted = device_type_service.delete(db, device_type_id)
     if not deleted:
         raise HTTPException(status_code=404, detail="Device type not found")
-    return Response()
+    return Response(status_code=204)
