@@ -14,6 +14,8 @@ from datetime import datetime, timezone
 
 from fastapi import FastAPI
 
+from src.routes.device_type_route import router as device_type_router
+
 
 class _JsonFormatter(logging.Formatter):
     """Logging formatter that emits records as JSON strings.
@@ -45,6 +47,8 @@ _configure_logging()
 logger = logging.getLogger(__name__)
 
 app = FastAPI(title="Device Registry")
+
+app.include_router(device_type_router)
 
 logger.info("Device Registry application starting up")
 

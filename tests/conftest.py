@@ -1,7 +1,7 @@
 """Shared test fixtures for the Device Registry test suite."""
 
 # Resource model imports — add here as resources are built
-# e.g. from src.models.device_type import DeviceType  # noqa: F401
+from src.models.device_type import DeviceType  # noqa: F401
 
 import pytest
 from sqlalchemy import create_engine
