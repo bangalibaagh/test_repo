@@ -15,6 +15,7 @@ from src.main import app
 from src.config.database import Base, get_db
 
 # resource model imports added per component
+from src.models.device_type import DeviceType  # noqa: F401
 
 engine = create_engine(
     "sqlite:///:memory:",
