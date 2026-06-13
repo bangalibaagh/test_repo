@@ -16,6 +16,7 @@ from fastapi import FastAPI
 
 from src.routes.device_type_route import router as device_type_router
 from src.routes.location_route import router as location_router
+from src.routes.device_route import router as device_router
 
 
 class _JsonFormatter(logging.Formatter):
@@ -51,6 +52,7 @@ app = FastAPI(title="Device Registry")
 
 app.include_router(device_type_router)
 app.include_router(location_router)
+app.include_router(device_router)
 
 logger.info("Device Registry application starting up")
 

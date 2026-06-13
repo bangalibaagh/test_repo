@@ -3,6 +3,7 @@
 # Resource model imports — add here as resources are built
 from src.models.device_type import DeviceType  # noqa: F401
 from src.models.location import Location  # noqa: F401
+from src.models.device import Device  # noqa: F401
 
 import pytest
 from sqlalchemy import create_engine
