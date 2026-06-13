@@ -112,7 +112,7 @@ def create(db: Session, data: DeviceCreate) -> Device:
     device = Device(
         serial_number=data.serial_number,
         name=data.name,
-        device_type_id=data.device_type_id,
+        device_type_id=getattr(data, "device_type_id", None),
         location_id=getattr(data, "location_id", None),
     )
     db.add(device)
