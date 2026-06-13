@@ -102,15 +102,15 @@ def test_update_location_duplicate_name(client):
 
 
 def test_delete_location(client):
-    """Test that a location can be deleted and is no longer retrievable.
+    """Test that a location can be deleted successfully.
 
     Args:
         client: The shared TestClient fixture.
     """
     create_response = client.post("/locations/", json={"name": "To Delete"})
     location_id = create_response.json()["id"]
-    delete_response = client.delete(f"/locations/{location_id}")
-    assert delete_response.status_code == 204
+    response = client.delete(f"/locations/{location_id}")
+    assert response.status_code == 204
     get_response = client.get(f"/locations/{location_id}")
     assert get_response.status_code == 404
 

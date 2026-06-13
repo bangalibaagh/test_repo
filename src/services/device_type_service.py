@@ -117,23 +117,24 @@ def update(db: Session, device_type_id: int, data: DeviceTypeUpdate) -> DeviceTy
 
     Raises:
         HTTPException: 404 if no device type with the given id exists.
-        HTTPException: 400 if the new name is already used by another record.
+        HTTPException: 400 if the new name is already used by another device type.
     """
     device_type = get_by_id(db, device_type_id)
 
     update_data = data.model_dump(exclude_unset=True)
 
-    if "name" in update_data and update_data["name"] != device_type.name:
+    if "name" in update_data:
         conflict = (
             db.query(DeviceType)
-            .filter(DeviceType.name == update_data["name"])
+            .filter(
+                DeviceType.name == update_data["name"],
+                DeviceType.id != device_type_id,
+            )
             .first()
         )
         if conflict:
             logger.warning("Duplicate device type name on update: %s", update_data["name"])
-            raise HTTPException(
-                status_code=400, detail="Device type name already in use"
-            )
+            raise HTTPException(status_code=400, detail="Device type name already in use")
 
     for field, value in update_data.items():
         setattr(device_type, field, value)

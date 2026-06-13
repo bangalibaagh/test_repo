@@ -143,12 +143,12 @@ def test_update_device(client):
         client: Shared TestClient fixture.
     """
     create_resp = client.post(
-        "/devices/", json={"serial_number": "SN-UPD", "name": "Original"}
+        "/devices/", json={"serial_number": "SN-UPD", "name": "Before Update"}
     )
     device_id = create_resp.json()["id"]
-    resp = client.put(f"/devices/{device_id}", json={"name": "Updated"})
+    resp = client.put(f"/devices/{device_id}", json={"name": "After Update"})
     assert resp.status_code == 200
-    assert resp.json()["name"] == "Updated"
+    assert resp.json()["name"] == "After Update"
 
 
 def test_update_device_not_found(client):
@@ -157,7 +157,7 @@ def test_update_device_not_found(client):
     Args:
         client: Shared TestClient fixture.
     """
-    resp = client.put("/devices/9999", json={"name": "Ghost"})
+    resp = client.put("/devices/9999", json={"name": "Ghost Device"})
     assert resp.status_code == 404
 
 
@@ -171,8 +171,8 @@ def test_delete_device(client):
         "/devices/", json={"serial_number": "SN-DEL", "name": "To Delete"}
     )
     device_id = create_resp.json()["id"]
-    del_resp = client.delete(f"/devices/{device_id}")
-    assert del_resp.status_code == 204
+    resp = client.delete(f"/devices/{device_id}")
+    assert resp.status_code == 204
     get_resp = client.get(f"/devices/{device_id}")
     assert get_resp.status_code == 404
 
