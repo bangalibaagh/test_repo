@@ -110,9 +110,9 @@ def create(db: Session, data: DeviceCreate) -> Device:
             raise HTTPException(status_code=404, detail="Location not found")
 
     device = Device(
-        serial_number=data.serial_number,
         name=data.name,
-        device_type_id=getattr(data, "device_type_id", None),
+        serial_number=data.serial_number,
+        device_type_id=data.device_type_id,
         location_id=getattr(data, "location_id", None),
     )
     db.add(device)

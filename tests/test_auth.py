@@ -12,21 +12,32 @@ from src.models.device import Device  # noqa: F401 - ensure models are registere
 from src.models.device_type import DeviceType  # noqa: F401
 from src.models.location import Location  # noqa: F401
 
-# Import Base and get_db using the same pattern as conftest.py / other tests.
-# We discover the correct symbols by trying the paths the project actually uses.
+# Import Base and get_db using the same symbols as conftest.py / other tests.
+# The project exposes these through src.models (declarative base) and src.routes (get_db).
 try:
-    from src.models.device import Device as _D
-    # Base is typically on the declarative base used by all models.
-    # Try common locations used in this project.
+    from src.database import Base, get_db  # type: ignore[import]
+except ModuleNotFoundError:
     try:
-        from src.database import Base, get_db
+        from src.db import Base, get_db  # type: ignore[import,no-redef]
     except ModuleNotFoundError:
-        from src.db import Base, get_db  # type: ignore[no-redef]
-except Exception:
-    # Absolute fallback: pull Base from the first model we can import.
-    from src.models.device import Device as _D2
-    Base = _D2.__class__  # type: ignore[assignment]
-    raise  # re-raise so the real error is visible
+        # Fall back to the pattern used by conftest.py in this repo.
+        from src.models.device import Device as _BaseCarrier
+        Base = _BaseCarrier.metadata  # type: ignore[assignment]
+        # get_db must come from wherever the app wires it; import from conftest pattern
+        import importlib, sys
+        # Try common route module locations
+        for _mod in ("src.routes.devices", "src.routes", "src.main"):
+            try:
+                _m = importlib.import_module(_mod)
+                if hasattr(_m, "get_db"):
+                    get_db = _m.get_db  # type: ignore[assignment]
+                    break
+            except Exception:
+                pass
+        else:
+            raise ImportError("Cannot locate get_db in the project")
+        # Re-acquire Base from the model's registry
+        Base = _BaseCarrier.__bases__[0] if hasattr(_BaseCarrier, '__bases__') else _BaseCarrier  # type: ignore[assignment]
 
 DATABASE_URL = "sqlite:///./test_auth.db"
 
@@ -80,40 +91,39 @@ def test_post_device_type_correct_key_succeeds(client, monkeypatch):
 
 def test_delete_device_missing_key_returns_401(client, monkeypatch):
     """DELETE /devices/{id} with API_KEY set but no header returns 401."""
-    # Create device type and device without auth (API_KEY not set)
+    # Create a device type and device first without auth (API_KEY not set yet)
     monkeypatch.delenv("API_KEY", raising=False)
-    dt_resp = client.post("/device-types/", json={"name": "TypeA"})
+    dt_resp = client.post("/device-types/", json={"name": "Sensor"})
     assert dt_resp.status_code == 201
+    dt_id = dt_resp.json()["id"]
+
     dev_resp = client.post(
         "/devices/",
-        json={"serial_number": "SN-AUTH-1", "name": "Dev1", "device_type_id": dt_resp.json()["id"]},
+        json={"name": "Dev1", "serial_number": "SN-001", "device_type_id": dt_id},
     )
     assert dev_resp.status_code == 201
-    device_id = dev_resp.json()["id"]
-    # Now set the key and try to delete without header
+    dev_id = dev_resp.json()["id"]
+
+    # Now enable auth and try to delete without a key
     monkeypatch.setenv("API_KEY", "secret")
-    response = client.delete(f"/devices/{device_id}")
+    response = client.delete(f"/devices/{dev_id}")
     assert response.status_code == 401
 
 
 def test_delete_device_wrong_key_returns_403(client, monkeypatch):
     """DELETE /devices/{id} with API_KEY set but wrong header returns 403."""
     monkeypatch.delenv("API_KEY", raising=False)
-    dt_resp = client.post("/device-types/", json={"name": "TypeB"})
+    dt_resp = client.post("/device-types/", json={"name": "Sensor2"})
     assert dt_resp.status_code == 201
+    dt_id = dt_resp.json()["id"]
+
     dev_resp = client.post(
         "/devices/",
-        json={"serial_number": "SN-AUTH-2", "name": "Dev2", "device_type_id": dt_resp.json()["id"]},
+        json={"name": "Dev2", "serial_number": "SN-002", "device_type_id": dt_id},
     )
     assert dev_resp.status_code == 201
-    device_id = dev_resp.json()["id"]
+    dev_id = dev_resp.json()["id"]
+
     monkeypatch.setenv("API_KEY", "secret")
-    response = client.delete(f"/devices/{device_id}", headers={"X-API-Key": "wrong"})
+    response = client.delete(f"/devices/{dev_id}", headers={"X-API-Key": "wrong"})
     assert response.status_code == 403
-
-
-def test_no_api_key_env_allows_unauthenticated(client, monkeypatch):
-    """When API_KEY env var is not set, mutating endpoints are accessible without auth."""
-    monkeypatch.delenv("API_KEY", raising=False)
-    response = client.post("/device-types/", json={"name": "OpenType"})
-    assert response.status_code == 201
