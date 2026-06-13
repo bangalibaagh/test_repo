@@ -79,3 +79,7 @@ app.include_router(device_type_router)
 from src.routes.location_route import router as location_router  # noqa: E402
 
 app.include_router(location_router)
+
+from src.routes.device_route import router as device_router  # noqa: E402
+
+app.include_router(device_router)
