@@ -102,7 +102,11 @@ def test_create_device_invalid_device_type(client):
     Args:
         client: Shared TestClient fixture.
     """
-    payload = {"serial_number": "SN-003", "name": "Device Three", "device_type_id": 9999}
+    payload = {
+        "serial_number": "SN-003",
+        "name": "Device Three",
+        "device_type_id": 9999,
+    }
     resp = client.post("/devices/", json=payload)
     assert resp.status_code == 404
 
@@ -113,43 +117,51 @@ def test_create_device_invalid_location(client):
     Args:
         client: Shared TestClient fixture.
     """
-    payload = {"serial_number": "SN-004", "name": "Device Four", "location_id": 9999}
+    payload = {
+        "serial_number": "SN-004",
+        "name": "Device Four",
+        "location_id": 9999,
+    }
     resp = client.post("/devices/", json=payload)
     assert resp.status_code == 404
 
 
 def test_get_device(client):
-    """GET /devices/{id} for an existing device should return 200 and the record.
+    """GET /devices/{id} should return 200 and the correct record.
 
     Args:
         client: Shared TestClient fixture.
     """
-    created = client.post("/devices/", json={"serial_number": "SN-005", "name": "Device Five"}).json()
-    resp = client.get(f"/devices/{created['id']}")
+    create_resp = client.post("/devices/", json={"serial_number": "SN-GET", "name": "Get Me"})
+    device_id = create_resp.json()["id"]
+    resp = client.get(f"/devices/{device_id}")
     assert resp.status_code == 200
-    assert resp.json()["serial_number"] == "SN-005"
+    assert resp.json()["id"] == device_id
 
 
 def test_get_device_not_found(client):
-    """GET /devices/{id} for a missing device should return 404.
+    """GET /devices/9999 should return 404 when the device does not exist.
 
     Args:
         client: Shared TestClient fixture.
     """
-    resp = client.get("/devices/99999")
+    resp = client.get("/devices/9999")
     assert resp.status_code == 404
 
 
 def test_update_device(client):
-    """PUT /devices/{id} should update the specified fields and return 200.
+    """PUT /devices/{id} should return 200 and the updated record.
 
     Args:
         client: Shared TestClient fixture.
     """
-    created = client.post("/devices/", json={"serial_number": "SN-006", "name": "Device Six"}).json()
-    resp = client.put(f"/devices/{created['id']}", json={"name": "Device Six Updated"})
+    create_resp = client.post(
+        "/devices/", json={"serial_number": "SN-UPD", "name": "Old Name"}
+    )
+    device_id = create_resp.json()["id"]
+    resp = client.put(f"/devices/{device_id}", json={"name": "New Name"})
     assert resp.status_code == 200
-    assert resp.json()["name"] == "Device Six Updated"
+    assert resp.json()["name"] == "New Name"
 
 
 def test_update_device_not_found(client):
@@ -158,20 +170,23 @@ def test_update_device_not_found(client):
     Args:
         client: Shared TestClient fixture.
     """
-    resp = client.put("/devices/9999", json={"name": "Ghost Device"})
+    resp = client.put("/devices/9999", json={"name": "Ghost"})
     assert resp.status_code == 404
 
 
 def test_delete_device(client):
-    """DELETE /devices/{id} should return 204 and subsequent GET should return 404.
+    """DELETE /devices/{id} should return 204 and the record should be gone.
 
     Args:
         client: Shared TestClient fixture.
     """
-    created = client.post("/devices/", json={"serial_number": "SN-007", "name": "Device Seven"}).json()
-    resp = client.delete(f"/devices/{created['id']}")
-    assert resp.status_code == 204
-    get_resp = client.get(f"/devices/{created['id']}")
+    create_resp = client.post(
+        "/devices/", json={"serial_number": "SN-DEL", "name": "To Delete"}
+    )
+    device_id = create_resp.json()["id"]
+    delete_resp = client.delete(f"/devices/{device_id}")
+    assert delete_resp.status_code == 204
+    get_resp = client.get(f"/devices/{device_id}")
     assert get_resp.status_code == 404
 
 

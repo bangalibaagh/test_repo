@@ -95,7 +95,7 @@ def create(db: Session, data: DeviceCreate) -> Device:
     existing = db.query(Device).filter(Device.serial_number == data.serial_number).first()
     if existing:
         logger.warning("Duplicate serial_number", extra={"serial_number": data.serial_number})
-        raise HTTPException(status_code=400, detail="serial_number already exists")
+        raise HTTPException(status_code=400, detail="serial_number already in use")
 
     if data.device_type_id is not None:
         dt = db.query(DeviceType).filter(DeviceType.id == data.device_type_id).first()
@@ -110,21 +110,19 @@ def create(db: Session, data: DeviceCreate) -> Device:
     device = Device(
         serial_number=data.serial_number,
         name=data.name,
-        status=data.status,
+        status=data.status if data.status else "active",
         device_type_id=data.device_type_id,
         location_id=data.location_id,
     )
     db.add(device)
     db.commit()
     db.refresh(device)
-    logger.info("Device created", extra={"device_id": device.id})
+    logger.info("Created device", extra={"device_id": device.id})
     return device
 
 
 def update(db: Session, device_id: int, data: DeviceUpdate) -> Device:
     """Update an existing device record.
-
-    Only fields that are not None in the payload are applied.
 
     Args:
         db: Active SQLAlchemy database session.
@@ -135,28 +133,30 @@ def update(db: Session, device_id: int, data: DeviceUpdate) -> Device:
         The updated Device ORM instance.
 
     Raises:
-        HTTPException: 404 if the device is not found.
+        HTTPException: 404 if no device with the given id exists.
         HTTPException: 404 if device_type_id is provided but not found.
         HTTPException: 404 if location_id is provided but not found.
     """
     device = get_by_id(db, device_id)
 
-    if data.device_type_id is not None:
-        dt = db.query(DeviceType).filter(DeviceType.id == data.device_type_id).first()
+    update_data = data.model_dump(exclude_unset=True)
+
+    if "device_type_id" in update_data and update_data["device_type_id"] is not None:
+        dt = db.query(DeviceType).filter(DeviceType.id == update_data["device_type_id"]).first()
         if not dt:
             raise HTTPException(status_code=404, detail="DeviceType not found")
 
-    if data.location_id is not None:
-        loc = db.query(Location).filter(Location.id == data.location_id).first()
+    if "location_id" in update_data and update_data["location_id"] is not None:
+        loc = db.query(Location).filter(Location.id == update_data["location_id"]).first()
         if not loc:
             raise HTTPException(status_code=404, detail="Location not found")
 
-    for field, value in data.model_dump(exclude_none=True).items():
+    for field, value in update_data.items():
         setattr(device, field, value)
 
     db.commit()
     db.refresh(device)
-    logger.info("Device updated", extra={"device_id": device_id})
+    logger.info("Updated device", extra={"device_id": device.id})
     return device
 
 
@@ -168,9 +168,9 @@ def delete(db: Session, device_id: int) -> None:
         device_id: Primary key of the device to delete.
 
     Raises:
-        HTTPException: 404 if the device is not found.
+        HTTPException: 404 if no device with the given id exists.
     """
     device = get_by_id(db, device_id)
     db.delete(device)
     db.commit()
-    logger.info("Device deleted", extra={"device_id": device_id})
+    logger.info("Deleted device", extra={"device_id": device_id})

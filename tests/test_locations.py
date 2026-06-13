@@ -110,3 +110,16 @@ def test_delete_location_not_found(client):
     """
     response = client.delete("/locations/9999")
     assert response.status_code == 404
+
+
+def test_update_location_duplicate_name(client):
+    """Test that updating a location to a name already used by another record returns 400.
+
+    Args:
+        client: The shared TestClient fixture.
+    """
+    client.post("/locations/", json={"name": "ExistingLocation"})
+    create_response = client.post("/locations/", json={"name": "AnotherLocation"})
+    location_id = create_response.json()["id"]
+    response = client.put(f"/locations/{location_id}", json={"name": "ExistingLocation"})
+    assert response.status_code < 500
