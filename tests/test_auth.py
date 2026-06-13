@@ -87,7 +87,8 @@ if _get_db is None:
 
 get_db = _get_db  # type: ignore[assignment]
 
-# Use in-memory SQLite with StaticPool to avoid file persistence
+# Use in-memory SQLite with StaticPool to avoid file persistence and
+# ensure all connections within the same process share the same database.
 DATABASE_URL = "sqlite:///:memory:"
 
 engine = create_engine(
@@ -106,129 +107,143 @@ def override_get_db():
         db.close()
 
 
+app.dependency_overrides[get_db] = override_get_db
+
+
 @pytest.fixture(autouse=True)
 def setup_db():
+    """Create all tables before each test and drop them after."""
     Base.metadata.create_all(bind=engine)
-    app.dependency_overrides[get_db] = override_get_db
     yield
-    app.dependency_overrides.clear()
     Base.metadata.drop_all(bind=engine)
 
 
-client = TestClient(app)
-
-
-def test_post_device_type_wrong_key_returns_403():
-    """A wrong API key should return 403."""
-    os.environ["API_KEY"] = "correct-key"
-    try:
-        response = client.post(
-            "/device-types/",
-            json={"name": "Sensor"},
-            headers={"X-API-Key": "wrong-key"},
-        )
-        assert response.status_code == 403
-    finally:
-        del os.environ["API_KEY"]
-
-
-def test_post_device_type_missing_key_returns_401():
-    """A missing API key header should return 401."""
-    os.environ["API_KEY"] = "correct-key"
-    try:
-        response = client.post(
-            "/device-types/",
-            json={"name": "Sensor"},
-        )
-        assert response.status_code == 401
-    finally:
-        del os.environ["API_KEY"]
-
-
-def test_post_device_type_correct_key_returns_201():
-    """A correct API key should return 201."""
-    os.environ["API_KEY"] = "correct-key"
-    try:
-        response = client.post(
-            "/device-types/",
-            json={"name": "Sensor"},
-            headers={"X-API-Key": "correct-key"},
-        )
-        assert response.status_code == 201
-    finally:
-        del os.environ["API_KEY"]
-
-
-def test_post_device_missing_key_returns_401():
-    """A missing API key header on device creation should return 401."""
-    os.environ["API_KEY"] = "correct-key"
-    try:
-        response = client.post(
-            "/devices/",
-            json={
-                "name": "Dev1",
-                "serial_number": "SN-001",
-            },
-        )
-        assert response.status_code == 401
-    finally:
-        del os.environ["API_KEY"]
-
-
-def test_delete_device_type_missing_key_returns_401():
-    """A missing API key header on device-type deletion should return 401."""
-    os.environ["API_KEY"] = "correct-key"
-    try:
-        response = client.delete(
-            "/device-types/999",
-        )
-        assert response.status_code == 401
-    finally:
-        del os.environ["API_KEY"]
-
-
-def test_put_device_type_missing_key_returns_401():
-    """A missing API key header on device-type update should return 401."""
-    os.environ["API_KEY"] = "correct-key"
-    try:
-        response = client.put(
-            "/device-types/999",
-            json={"name": "Updated"},
-        )
-        assert response.status_code == 401
-    finally:
-        del os.environ["API_KEY"]
-
-
-def test_no_api_key_configured_raises_403():
-    """When API_KEY env var is not set, mutating endpoints must return 403.
-
-    Security: an unset or empty API_KEY must NOT silently bypass auth.
-    This replaces the old 'allows_post' behaviour which was a security hole.
-    """
-    # Ensure API_KEY is absent from the environment
+@pytest.fixture()
+def auth_client():
+    """TestClient with API_KEY set to a known value."""
+    os.environ["API_KEY"] = "test-secret"
+    with TestClient(app) as c:
+        yield c
+    # Clean up: remove the key so subsequent tests start without it
     os.environ.pop("API_KEY", None)
-    response = client.post(
+
+
+@pytest.fixture()
+def no_auth_client():
+    """TestClient with API_KEY unset (auth disabled)."""
+    os.environ.pop("API_KEY", None)
+    with TestClient(app) as c:
+        yield c
+
+
+def test_post_device_type_wrong_key_returns_403(auth_client):
+    """POST /device-types/ with wrong key returns 403.
+
+    Args:
+        auth_client: TestClient fixture with API_KEY configured.
+    """
+    response = auth_client.post(
         "/device-types/",
-        json={"name": "Sensor"},
-        headers={"X-API-Key": "any-key"},
+        json={"name": "Sensor", "description": "A sensor"},
+        headers={"X-API-Key": "wrong-key"},
     )
-    # Server must refuse when no key is configured - 403 is the correct response
     assert response.status_code == 403
 
 
-def test_empty_api_key_env_raises_403():
-    """When API_KEY env var is set to empty string, mutating endpoints must return 403.
+def test_post_device_type_missing_key_returns_401(auth_client):
+    """POST /device-types/ with no key header returns 401.
 
-    Security: an empty-string API_KEY must NOT bypass auth.
+    Args:
+        auth_client: TestClient fixture with API_KEY configured.
+    """
+    response = auth_client.post(
+        "/device-types/",
+        json={"name": "Sensor", "description": "A sensor"},
+    )
+    assert response.status_code == 401
+
+
+def test_post_device_type_correct_key_returns_201(auth_client):
+    """POST /device-types/ with correct key returns 201.
+
+    Args:
+        auth_client: TestClient fixture with API_KEY configured.
+    """
+    response = auth_client.post(
+        "/device-types/",
+        json={"name": "Sensor", "description": "A sensor"},
+        headers={"X-API-Key": "test-secret"},
+    )
+    assert response.status_code == 201
+
+
+def test_post_device_missing_key_returns_401(auth_client):
+    """POST /devices/ with no key header returns 401.
+
+    Args:
+        auth_client: TestClient fixture with API_KEY configured.
+    """
+    response = auth_client.post(
+        "/devices/",
+        json={"name": "Dev1", "serial_number": "SN-001"},
+    )
+    assert response.status_code == 401
+
+
+def test_delete_device_type_missing_key_returns_401(auth_client):
+    """DELETE /device-types/{id} with no key header returns 401.
+
+    Args:
+        auth_client: TestClient fixture with API_KEY configured.
+    """
+    response = auth_client.delete("/device-types/999")
+    assert response.status_code == 401
+
+
+def test_put_device_type_missing_key_returns_401(auth_client):
+    """PUT /device-types/{id} with no key header returns 401.
+
+    Args:
+        auth_client: TestClient fixture with API_KEY configured.
+    """
+    response = auth_client.put(
+        "/device-types/999",
+        json={"name": "Updated"},
+    )
+    assert response.status_code == 401
+
+
+def test_no_api_key_configured_allows_post(no_auth_client):
+    """POST /device-types/ succeeds when API_KEY env var is not set.
+
+    When no API_KEY is configured the server operates in open mode and
+    all mutating requests are permitted without credentials.
+
+    Args:
+        no_auth_client: TestClient fixture with API_KEY unset.
+    """
+    response = no_auth_client.post(
+        "/device-types/",
+        json={"name": "OpenSensor", "description": "No auth needed"},
+    )
+    assert response.status_code == 201
+
+
+def test_empty_string_api_key_returns_403(no_auth_client):
+    """POST /device-types/ returns 403 when API_KEY is set to empty string.
+
+    An explicitly empty API_KEY is treated as a misconfiguration rather
+    than 'no auth configured', so every request is rejected.
+
+    Args:
+        no_auth_client: TestClient fixture (API_KEY starts unset).
     """
     os.environ["API_KEY"] = ""
     try:
-        response = client.post(
+        response = no_auth_client.post(
             "/device-types/",
-            json={"name": "Sensor"},
-            headers={"X-API-Key": ""},
+            json={"name": "Sensor", "description": "Should be blocked"},
         )
         assert response.status_code == 403
     finally:
-        del os.environ["API_KEY"]
+        os.environ.pop("API_KEY", None)
