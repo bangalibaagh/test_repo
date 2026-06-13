@@ -114,6 +114,7 @@ def create(db: Session, data: DeviceCreate) -> Device:
         serial_number=data.serial_number,
         device_type_id=getattr(data, "device_type_id", None),
         location_id=getattr(data, "location_id", None),
+        status=data.status,
     )
     db.add(device)
     db.commit()

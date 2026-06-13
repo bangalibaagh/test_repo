@@ -29,10 +29,17 @@ def require_api_key(api_key: str = Security(_api_key_header)) -> str:
         HTTPException: 403 if the API key is invalid.
     """
     # Re-read from environment each call so tests can set API_KEY at runtime.
-    effective_key = os.environ.get("API_KEY", "")
-    if not effective_key:
-        # If no API_KEY is configured, auth is disabled (dev/test mode).
+    # Use sentinel None to distinguish "not configured" from "set to empty string".
+    effective_key = os.environ.get("API_KEY")  # None if unset, str if set
+    if effective_key is None:
+        # API_KEY not configured at all: auth is disabled (dev/test mode).
         return ""
+    if not effective_key:
+        # API_KEY is set but empty string: treat as misconfigured, deny all access.
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="API key not configured on server",
+        )
     if api_key is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
